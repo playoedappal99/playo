@@ -1,68 +1,87 @@
 "use client";
 
 import React from "react";
-import { Phone, Mail, MapPin, Heart } from "lucide-react";
+import Link from "next/link";
+import Image from "next/image";
+import { Phone, Mail, MapPin, Heart, ShieldCheck } from "lucide-react";
 
 export default function Footer({
   onSelectCategory,
 }: {
-  onSelectCategory: (categorySlug: string) => void;
+  onSelectCategory?: (categorySlug: string) => void;
 }) {
+  const handleCatClick = (slug: string, e: React.MouseEvent) => {
+    if (onSelectCategory) {
+      e.preventDefault();
+      onSelectCategory(slug);
+    }
+  };
+
   return (
-    <footer className="bg-[#0b1b2b] text-white pt-14 pb-10 border-t border-gray-800">
+    <footer id="footer" className="bg-[#0D1B2A] text-white pt-14 pb-10 border-t border-[#1b2d42] scroll-mt-10" aria-label="Store Footer">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-10 pb-12 border-b border-gray-800/80">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-10 pb-12 border-b border-white/10">
+          
           {/* Col 1: Brand Info (4 cols) */}
           <div className="lg:col-span-4 space-y-4">
-            <div className="flex flex-col items-start select-none">
-              <div className="flex items-center tracking-tight">
-                <span className="text-2xl font-black text-white tracking-wider">
-                  PLAYO
-                </span>
-                <span className="w-2 h-2 rounded-full bg-orange-500 ml-0.5 -mt-3 animate-pulse" />
+            <Link 
+              href="/"
+              className="inline-block select-none"
+              aria-label="Playo Home"
+            >
+              <div className="relative h-12 w-auto flex items-center">
+                <Image
+                  src="/images/playo-logo.png"
+                  alt="Playo Logo"
+                  width={150}
+                  height={62}
+                  className="h-11 w-auto object-contain brightness-110 drop-shadow-md"
+                />
               </div>
-              <div className="flex items-center gap-1 w-28 justify-between">
-                <span className="text-[10px] font-black text-gray-400 tracking-[0.25em] uppercase">
-                  EDAPPAL
-                </span>
-                <div className="flex gap-0.5">
-                  <span className="w-1 h-1 rounded-full bg-orange-400" />
-                  <span className="w-1 h-1 rounded-full bg-amber-400" />
-                  <span className="w-1 h-1 rounded-full bg-red-400" />
-                </div>
-              </div>
-            </div>
+            </Link>
 
-            <p className="text-xs text-gray-400 font-medium">
-              Toys for a brighter tomorrow.
+            <p className="text-xs text-gray-300 font-medium">
+              Toys for a brighter tomorrow. Bringing smiles to children across Kerala.
             </p>
 
             <p className="text-xs text-gray-400 leading-relaxed max-w-sm">
-              Playo Edappal is your trusted toy shop in Kerala, bringing smiles, imagination and joy to every child.
+              Playo Edappal is your trusted destination for kids&apos; electric ride-on cars, mini balance bikes, LED scooters, and collectible diecast models.
             </p>
 
-            {/* Social Icons */}
-            <div className="flex items-center gap-2.5 pt-2">
+            {/* Social Icons with Accessible SVGs */}
+            <div className="flex items-center gap-3 pt-2">
               <a
-                href="#"
-                aria-label="Facebook"
-                className="w-8 h-8 rounded-full border border-gray-700 hover:border-gray-500 flex items-center justify-center text-gray-400 hover:text-white transition-colors"
+                href="https://facebook.com"
+                target="_blank"
+                rel="noreferrer"
+                aria-label="Follow Playo on Facebook"
+                className="w-9 h-9 rounded-full bg-white/5 border border-white/10 hover:border-[#FF9800] hover:text-[#FF9800] flex items-center justify-center text-gray-400 transition-colors cursor-pointer"
               >
-                <span className="text-xs font-bold">f</span>
+                <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                  <path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" />
+                </svg>
               </a>
               <a
-                href="#"
-                aria-label="Instagram"
-                className="w-8 h-8 rounded-full border border-gray-700 hover:border-gray-500 flex items-center justify-center text-gray-400 hover:text-white transition-colors"
+                href="https://instagram.com"
+                target="_blank"
+                rel="noreferrer"
+                aria-label="Follow Playo on Instagram"
+                className="w-9 h-9 rounded-full bg-white/5 border border-white/10 hover:border-[#FF9800] hover:text-[#FF9800] flex items-center justify-center text-gray-400 transition-colors cursor-pointer"
               >
-                <span className="text-xs font-bold">ig</span>
+                <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                  <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+                </svg>
               </a>
               <a
-                href="#"
-                aria-label="YouTube"
-                className="w-8 h-8 rounded-full border border-gray-700 hover:border-gray-500 flex items-center justify-center text-gray-400 hover:text-white transition-colors"
+                href="https://youtube.com"
+                target="_blank"
+                rel="noreferrer"
+                aria-label="Subscribe to Playo on YouTube"
+                className="w-9 h-9 rounded-full bg-white/5 border border-white/10 hover:border-[#FF9800] hover:text-[#FF9800] flex items-center justify-center text-gray-400 transition-colors cursor-pointer"
               >
-                <span className="text-xs font-bold">yt</span>
+                <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                  <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+                </svg>
               </a>
             </div>
           </div>
@@ -72,70 +91,69 @@ export default function Footer({
             <h4 className="text-xs font-bold uppercase tracking-wider text-gray-200 mb-4">
               Shop by Category
             </h4>
-            <ul className="space-y-2 text-xs text-gray-400">
+            <ul className="space-y-2.5 text-xs text-gray-300">
               <li>
-                <button
-                  onClick={() => onSelectCategory("ride-ons")}
-                  className="hover:text-white transition-colors"
+                <Link
+                  href="/catalog?category=ride-ons"
+                  onClick={(e) => handleCatClick("ride-ons", e)}
+                  className="hover:text-[#FF9800] transition-colors"
                 >
-                  Electric Ride-ons
-                </button>
+                  Electric Ride-ons & 4x4 Jeeps
+                </Link>
               </li>
               <li>
-                <button
-                  onClick={() => onSelectCategory("rc-cars")}
-                  className="hover:text-white transition-colors"
+                <Link
+                  href="/catalog?category=mini-bikes"
+                  onClick={(e) => handleCatClick("mini-bikes", e)}
+                  className="hover:text-[#FF9800] transition-colors"
                 >
-                  RC Cars
-                </button>
+                  Kids&apos; Mini Bikes & Balance Cycles
+                </Link>
               </li>
               <li>
-                <button
-                  onClick={() => onSelectCategory("scooters")}
-                  className="hover:text-white transition-colors"
+                <Link
+                  href="/catalog?category=scooters"
+                  onClick={(e) => handleCatClick("scooters", e)}
+                  className="hover:text-[#FF9800] transition-colors"
                 >
-                  Scooters
-                </button>
+                  Small Scooters with LED Wheels
+                </Link>
               </li>
               <li>
-                <button
-                  onClick={() => onSelectCategory("dolls")}
-                  className="hover:text-white transition-colors"
+                <Link
+                  href="/catalog?category=rc-cars"
+                  onClick={(e) => handleCatClick("rc-cars", e)}
+                  className="hover:text-[#FF9800] transition-colors"
                 >
-                  Dolls & Pretend Play
-                </button>
+                  High-Speed RC Drift Cars
+                </Link>
               </li>
               <li>
-                <button
-                  onClick={() => onSelectCategory("soft-toys")}
-                  className="hover:text-white transition-colors"
+                <Link
+                  href="/catalog?category=diecast"
+                  onClick={(e) => handleCatClick("diecast", e)}
+                  className="hover:text-[#FF9800] transition-colors"
                 >
-                  Soft Toys
-                </button>
+                  Diecast Model Supercars (1:18)
+                </Link>
               </li>
               <li>
-                <button
-                  onClick={() => onSelectCategory("learning")}
-                  className="hover:text-white transition-colors"
+                <Link
+                  href="/catalog?category=soft-toys"
+                  onClick={(e) => handleCatClick("soft-toys", e)}
+                  className="hover:text-[#FF9800] transition-colors"
                 >
-                  Creative & Learning
-                </button>
+                  Cuddly Soft Plush Teddy Bears
+                </Link>
               </li>
               <li>
-                <button
-                  onClick={() => onSelectCategory("all")}
-                  className="hover:text-white transition-colors"
+                <Link
+                  href="/catalog?category=learning"
+                  onClick={(e) => handleCatClick("learning", e)}
+                  className="hover:text-[#FF9800] transition-colors"
                 >
-                  Outdoor & Sports
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => onSelectCategory("all")}
-                  className="hover:text-white transition-colors"
-                >
-                  More
-                </button>
+                  Creative & STEM Learning Toys
+                </Link>
               </li>
             </ul>
           </div>
@@ -145,24 +163,30 @@ export default function Footer({
             <h4 className="text-xs font-bold uppercase tracking-wider text-gray-200 mb-4">
               Customer Care
             </h4>
-            <ul className="space-y-2 text-xs text-gray-400">
+            <ul className="space-y-2.5 text-xs text-gray-300">
               <li>
-                <a href="#" className="hover:text-white transition-colors">About Us</a>
+                <Link href="/my-orders" className="text-[#FF9800] hover:underline font-semibold transition-colors flex items-center gap-1">
+                  <span>Track My Order</span>
+                </Link>
               </li>
               <li>
-                <a href="#" className="hover:text-white transition-colors">Shipping & Delivery</a>
+                <Link href="/catalog" className="hover:text-white transition-colors">
+                  Product Catalog
+                </Link>
               </li>
               <li>
-                <a href="#" className="hover:text-white transition-colors">Warranty</a>
+                <a href="#footer" className="hover:text-white transition-colors">About Playo Edappal</a>
               </li>
               <li>
-                <a href="#" className="hover:text-white transition-colors">Return & Refund</a>
+                <a href="https://wa.me/919072345678" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">
+                  WhatsApp Support
+                </a>
               </li>
               <li>
-                <a href="#" className="hover:text-white transition-colors">FAQs</a>
+                <span className="text-gray-400 block pt-1">Free delivery above ₹999</span>
               </li>
               <li>
-                <a href="#" className="hover:text-white transition-colors">Contact Us</a>
+                <span className="text-gray-400 block">7-day replacement guarantee</span>
               </li>
             </ul>
           </div>
@@ -172,42 +196,45 @@ export default function Footer({
             <h4 className="text-xs font-bold uppercase tracking-wider text-gray-200 mb-4">
               Get in Touch
             </h4>
-            <ul className="space-y-2.5 text-xs text-gray-400">
+            <ul className="space-y-3 text-xs text-gray-300">
               <li className="flex items-center gap-2.5">
-                <Phone className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                <a href="tel:+919072345678" className="hover:text-white">
+                <Phone className="w-4 h-4 text-[#FF9800] shrink-0" />
+                <a href="tel:+919072345678" className="hover:text-white transition-colors font-medium">
                   +91 9072 345 678
                 </a>
               </li>
               <li className="flex items-center gap-2.5">
-                <Mail className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                <a href="mailto:playoedappal@gmail.com" className="hover:text-white">
+                <Mail className="w-4 h-4 text-[#FF9800] shrink-0" />
+                <a href="mailto:playoedappal@gmail.com" className="hover:text-white transition-colors">
                   playoedappal@gmail.com
                 </a>
               </li>
               <li className="flex items-start gap-2.5">
-                <MapPin className="w-3.5 h-3.5 text-gray-400 shrink-0 mt-0.5" />
-                <span>
-                  Edappal, Malappuram <br />
-                  Kerala - 679541
+                <MapPin className="w-4 h-4 text-[#FF9800] shrink-0 mt-0.5" />
+                <span className="leading-relaxed">
+                  Playo Toys & Ride-Ons Showroom <br />
+                  Edappal, Malappuram District <br />
+                  Kerala — 679541
                 </span>
               </li>
             </ul>
 
-            <div className="pt-3">
-              <p className="text-sm italic font-serif text-gray-300 flex items-center gap-1.5 tracking-wide">
-                <span>Play • Learn • Grow</span>
-                <Heart className="w-3.5 h-3.5 text-orange-500 fill-current inline" />
-              </p>
+            <div className="pt-2">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-xs text-gray-300">
+                <ShieldCheck className="w-4 h-4 text-[#16A34A]" />
+                <span>Verified Local Toy Dealer</span>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Bottom copyright row */}
-        <div className="pt-8 flex flex-col sm:flex-row items-center justify-between text-xs text-gray-500 gap-3">
-          <p>© 2025 Playo Edappal. All rights reserved.</p>
-          <p className="flex items-center gap-1">
-            Made with <Heart className="w-3 h-3 text-red-500 fill-current" /> in Kerala
+        <div className="pt-8 flex flex-col sm:flex-row items-center justify-between text-xs text-gray-400 gap-3">
+          <p>© 2026 PlayoToys Edappal. All rights reserved.</p>
+          <p className="flex items-center gap-1.5">
+            <span>Play • Learn • Grow with</span>
+            <Heart className="w-3.5 h-3.5 text-[#FF9800] fill-current inline" />
+            <span>in Kerala</span>
           </p>
         </div>
       </div>

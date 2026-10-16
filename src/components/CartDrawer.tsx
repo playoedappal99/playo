@@ -60,9 +60,9 @@ export default function CartDrawer({
           {/* Header */}
           <div className="p-5 border-b border-gray-100 flex items-center justify-between bg-gray-50/70">
             <div className="flex items-center gap-2">
-              <ShoppingBag className="w-5 h-5 text-amber-600" />
-              <h3 className="font-black text-gray-900 text-lg">Your Cart</h3>
-              <span className="bg-amber-100 text-amber-800 text-xs font-bold px-2 py-0.5 rounded-full">
+              <ShoppingBag className="w-5 h-5 text-[#FF9800]" />
+              <h3 className="font-bold font-heading text-[#0D1B2A] text-lg">Your Cart</h3>
+              <span className="bg-orange-100 text-orange-950 text-xs font-bold px-2 py-0.5 rounded-full">
                 {cartItems.reduce((acc, i) => acc + i.quantity, 0)} items
               </span>
             </div>
@@ -203,10 +203,10 @@ export default function CartDrawer({
 
               {/* Direct WhatsApp Checkout */}
               <a
-                href={`https://wa.me/919846000000?text=${whatsappMessage}`}
+                href={`https://wa.me/919072345678?text=${whatsappMessage}`}
                 target="_blank"
                 rel="noreferrer"
-                className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-sm shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-95"
+                className="w-full py-3.5 px-4 rounded-2xl bg-[#16A34A] hover:bg-[#15803D] text-white font-bold text-sm shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-95 cursor-pointer"
               >
                 <Phone className="w-4 h-4" />
                 <span>Complete Order on WhatsApp</span>

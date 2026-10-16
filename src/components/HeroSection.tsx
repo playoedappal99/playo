@@ -2,16 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
-import { 
-  ChevronLeft, 
-  ChevronRight, 
-  ArrowRight,
-  ShieldCheck, 
-  Truck, 
-  Shield, 
-  RotateCcw, 
-  Headphones 
-} from "lucide-react";
+import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface HeroSectionProps {
   onShopBestsellers: () => void;
@@ -23,91 +14,73 @@ interface SlideItem {
   id: string;
   kicker: string;
   title: string;
+  highlightWord: string;
   slug: string;
   bgColor: string;
   bgGradient: string;
+  accentColor: string;
   image: string;
   alt: string;
-  imageFit?: "cover" | "contain";
+  description: string;
 }
 
+// 4 Promotional Slides specified in Design Direction:
+// 1. Kids' Diecast Cars
+// 2. Kids' Mini Bikes
+// 3. Electric Ride-ons
+// 4. Small Scooters
 const SLIDES_DATA: SlideItem[] = [
-  {
-    id: "mini-bikes",
-    kicker: "Kids'",
-    title: "Mini Bike",
-    slug: "scooters",
-    bgColor: "#e61d2b",
-    bgGradient: "from-[#d90429] via-[#ef233c] to-[#e61d2b]",
-    image: "/images/carousel/mini-bike.png",
-    alt: "Kids' Red Mini Dirt Bike Motocross",
-    imageFit: "contain",
-  },
-  {
-    id: "small-scooters",
-    kicker: "Kids'",
-    title: "Small Scooters",
-    slug: "scooters",
-    bgColor: "#f97316",
-    bgGradient: "from-[#c2410c] via-[#ea580c] to-[#f97316]",
-    image: "/images/carousel/scooters.jpg",
-    alt: "Kids' 3-Wheel Light-up LED Kick Scooter",
-    imageFit: "contain",
-  },
-  {
-    id: "toy-jeeps",
-    kicker: "Kids'",
-    title: "Toy Jeeps",
-    slug: "ride-ons",
-    bgColor: "#059669",
-    bgGradient: "from-[#047857] via-[#059669] to-[#10b981]",
-    image: "/images/carousel/toy-jeeps.jpg",
-    alt: "Kids' 4x4 Off-Road Electric Ride-On Toy Jeep",
-    imageFit: "contain",
-  },
-  {
-    id: "various-toys",
-    kicker: "Kids'",
-    title: "Various Toys",
-    slug: "learning",
-    bgColor: "#0284c7",
-    bgGradient: "from-[#0369a1] via-[#0284c7] to-[#38bdf8]",
-    image: "/images/carousel/various-toys.jpg",
-    alt: "Kids' Educational Stacking Blocks and Various Learning Toys",
-    imageFit: "contain",
-  },
-  {
-    id: "soft-toys",
-    kicker: "Kids'",
-    title: "Soft Toys",
-    slug: "soft-toys",
-    bgColor: "#db2777",
-    bgGradient: "from-[#be185d] via-[#db2777] to-[#f472b6]",
-    image: "/images/carousel/soft-toys.jpg",
-    alt: "Kids' Plush Cuddly Teddy Bear and Soft Toys",
-    imageFit: "contain",
-  },
-  {
-    id: "rc-cars",
-    kicker: "Kids'",
-    title: "RC Cars",
-    slug: "rc-cars",
-    bgColor: "#2563eb",
-    bgGradient: "from-[#1d4ed8] via-[#2563eb] to-[#60a5fa]",
-    image: "/images/carousel/rc-cars.jpg",
-    alt: "High-Speed Radio Control RC Drift Sports Car with Remote",
-    imageFit: "contain",
-  },
   {
     id: "diecast-cars",
     kicker: "Kids'",
     title: "Diecast Cars",
-    slug: "rc-cars",
-    bgColor: "#0f172a",
-    bgGradient: "from-[#020617] via-[#0f172a] to-[#1e293b]",
-    image: "/images/carousel/diecast-cars.jpg",
-    alt: "Precision Metal Collectible Diecast Model Supercar",
-    imageFit: "contain",
+    highlightWord: "Diecast Cars",
+    slug: "diecast",
+    bgColor: "#0D1B2A",
+    bgGradient: "from-[#08121d] via-[#0D1B2A] to-[#162a40]",
+    accentColor: "#FFE600",
+    image: "/images/carousel/kids-diecast.png",
+    alt: "Kids' Precision Metal Collectible Diecast Model Supercar",
+    description: "Detailed 1:18 scale models with opening doors and realistic engine bays",
+  },
+  {
+    id: "mini-bikes",
+    kicker: "Kids'",
+    title: "Mini Bikes",
+    highlightWord: "Mini Bikes",
+    slug: "mini-bikes",
+    bgColor: "#991B1B",
+    bgGradient: "from-[#7f1d1d] via-[#991b1b] to-[#b91c1c]",
+    accentColor: "#FFE600",
+    image: "/images/carousel/kids-balance-bike.png",
+    alt: "Kids' Pro Balance Mini Bike & Trail Explorer",
+    description: "Ultra-lightweight magnesium alloy frames built for early balance",
+  },
+  {
+    id: "electric-ride-ons",
+    kicker: "Electric",
+    title: "Ride-ons",
+    highlightWord: "Ride-ons",
+    slug: "ride-ons",
+    bgColor: "#0F243A",
+    bgGradient: "from-[#091522] via-[#0D1B2A] to-[#14324f]",
+    accentColor: "#FF9800",
+    image: "/images/carousel/kids-jeep.png",
+    alt: "Kids' 4x4 Off-Road Electric Ride-On Toy Jeep",
+    description: "12V dual motors with parent remote control and LED headlights",
+  },
+  {
+    id: "small-scooters",
+    kicker: "Small",
+    title: "Scooters",
+    highlightWord: "Scooters",
+    slug: "scooters",
+    bgColor: "#0B192C",
+    bgGradient: "from-[#091726] via-[#0d2238] to-[#1e3a5f]",
+    accentColor: "#FFE600",
+    image: "/images/carousel/kids-scooter.png",
+    alt: "Kids' 3-Wheel Light-up LED Kick Scooter",
+    description: "Lean-to-steer safety with kinetic glowing LED wheels",
   },
 ];
 
@@ -117,6 +90,7 @@ export default function HeroSection({
 }: HeroSectionProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const [isReducedMotion, setIsReducedMotion] = useState(false);
   const touchStartX = useRef<number | null>(null);
 
   const nextSlide = useCallback(() => {
@@ -127,16 +101,38 @@ export default function HeroSection({
     setCurrentIndex((prev) => (prev - 1 + SLIDES_DATA.length) % SLIDES_DATA.length);
   }, []);
 
-  // Auto carousel rotation every 4.5 seconds
+  // Check prefers-reduced-motion
   useEffect(() => {
-    if (isPaused) return;
+    if (typeof window !== "undefined") {
+      const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+      setIsReducedMotion(mediaQuery.matches);
+
+      const handleChange = (e: MediaQueryListEvent) => setIsReducedMotion(e.matches);
+      mediaQuery.addEventListener("change", handleChange);
+      return () => mediaQuery.removeEventListener("change", handleChange);
+    }
+  }, []);
+
+  // Preload all carousel slide images
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      SLIDES_DATA.forEach((slide) => {
+        const img = new window.Image();
+        img.src = slide.image;
+      });
+    }
+  }, []);
+
+  // Auto carousel advance every 4.5 seconds (paused on hover or if reduced motion is enabled)
+  useEffect(() => {
+    if (isPaused || isReducedMotion) return;
     const interval = setInterval(() => {
       nextSlide();
     }, 4500);
     return () => clearInterval(interval);
-  }, [nextSlide, isPaused]);
+  }, [nextSlide, isPaused, isReducedMotion]);
 
-  // Touch Swipe Handlers for mobile screens
+  // Touch Swipe Handlers for mobile
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
   };
@@ -144,9 +140,9 @@ export default function HeroSection({
   const handleTouchEnd = (e: React.TouchEvent) => {
     if (touchStartX.current === null) return;
     const diff = touchStartX.current - e.changedTouches[0].clientX;
-    if (diff > 50) {
+    if (diff > 45) {
       nextSlide();
-    } else if (diff < -50) {
+    } else if (diff < -45) {
       prevSlide();
     }
     touchStartX.current = null;
@@ -163,62 +159,92 @@ export default function HeroSection({
   };
 
   return (
-    <section className="w-full bg-[#fafbfc] pt-3 pb-8 sm:pt-4 sm:pb-12">
+    <section className="w-full bg-[#FFFFFF] pt-3 pb-8 sm:pt-4 sm:pb-12" aria-label="Hero Promotion Carousel">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
         
-        {/* Main Carousel Banner Card (Large Rounded Corners matching screenshot) */}
+        {/* Main Carousel Banner Card (Large Rounded Corners with Brand Palette Backgrounds) */}
         <div 
-          className="relative w-full rounded-2xl sm:rounded-[32px] md:rounded-[40px] overflow-hidden shadow-md select-none transition-colors duration-700"
+          className="relative w-full rounded-2xl sm:rounded-[32px] md:rounded-[40px] overflow-hidden shadow-lg select-none transition-colors duration-700 group"
           style={{ backgroundColor: currentSlide.bgColor }}
           onMouseEnter={() => setIsPaused(true)}
           onMouseLeave={() => setIsPaused(false)}
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
+          role="region"
+          aria-roledescription="carousel"
+          aria-label="Promotional highlights"
         >
           {/* Subtle Ambient Vignette/Gradient Layer */}
           <div className={`absolute inset-0 bg-gradient-to-r ${currentSlide.bgGradient} opacity-95 transition-opacity duration-700`} />
 
+          {/* Previous Arrow Button */}
+          <button
+            onClick={prevSlide}
+            aria-label="Previous slide"
+            type="button"
+            className="hidden sm:flex absolute left-3 sm:left-5 top-1/2 -translate-y-1/2 z-20 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-black/30 hover:bg-black/55 text-white backdrop-blur-xs items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-md border border-white/20 focus-visible:outline-2 focus-visible:outline-[#FF9800]"
+          >
+            <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
+          </button>
+
+          {/* Next Arrow Button */}
+          <button
+            onClick={nextSlide}
+            aria-label="Next slide"
+            type="button"
+            className="hidden sm:flex absolute right-3 sm:right-5 top-1/2 -translate-y-1/2 z-20 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-black/30 hover:bg-black/55 text-white backdrop-blur-xs items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-md border border-white/20 focus-visible:outline-2 focus-visible:outline-[#FF9800]"
+          >
+            <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
+          </button>
+
           {/* Banner Inner Content */}
-          <div className="relative z-10 w-full min-h-[260px] sm:min-h-[320px] md:min-h-[360px] lg:min-h-[400px] flex items-center">
+          <div className="relative z-10 w-full min-h-[220px] xs:min-h-[250px] sm:min-h-[340px] md:min-h-[390px] lg:min-h-[430px] flex items-center">
             
-            {/* If Mini Bike slide, we can render the exact composite or side-by-side layout */}
-            <div className="w-full grid grid-cols-12 items-center px-6 sm:px-12 md:px-16 lg:px-20 py-8 sm:py-10">
+            <div className="w-full grid grid-cols-12 items-center px-4 xs:px-6 sm:px-12 md:px-16 lg:px-20 py-5 sm:py-8 md:py-10">
               
-              {/* Left Column: Huge Headline & CTA Button */}
-              <div className="col-span-12 sm:col-span-7 lg:col-span-6 z-10 space-y-2 sm:space-y-4">
+              {/* Left Column: Bold Headline & CTA Button */}
+              <div className="col-span-7 sm:col-span-7 lg:col-span-6 z-10 space-y-1.5 xs:space-y-2 sm:space-y-3 pr-1 sm:pr-4">
                 <div className="flex flex-col tracking-tight">
-                  {/* Line 1: Kids' in Pure White */}
-                  <span className="font-outfit font-black text-3xl sm:text-5xl md:text-6xl lg:text-7xl text-white leading-[1.05] drop-shadow-xs">
+                  {/* Line 1: Kicker / White text */}
+                  <span className="font-outfit font-black text-2xl xs:text-3xl sm:text-5xl md:text-6xl lg:text-7xl text-white leading-[1.05] drop-shadow-xs">
                     {currentSlide.kicker}
                   </span>
-                  {/* Line 2: Category in Bright Vibrant Yellow */}
-                  <span className="font-outfit font-black text-3xl sm:text-5xl md:text-6xl lg:text-7xl text-[#ffee00] leading-[1.05] drop-shadow-xs">
+                  {/* Line 2: Highlighted Keyword in Vibrant Yellow or Orange */}
+                  <span 
+                    className="font-outfit font-black text-2xl xs:text-3xl sm:text-5xl md:text-6xl lg:text-7xl leading-[1.05] drop-shadow-xs transition-colors duration-500"
+                    style={{ color: currentSlide.accentColor }}
+                  >
                     {currentSlide.title}
                   </span>
                 </div>
 
-                {/* White Pill CTA Button */}
-                <div className="pt-2 sm:pt-4">
+                <p className="hidden sm:block text-xs md:text-sm text-gray-200/90 font-medium max-w-md pt-0.5">
+                  {currentSlide.description}
+                </p>
+
+                {/* Clear Shop Now Pill CTA Button */}
+                <div className="pt-1.5 xs:pt-2 sm:pt-4">
                   <button
                     onClick={handleCtaClick}
-                    className="bg-white hover:bg-gray-100 text-gray-950 font-bold text-xs sm:text-sm md:text-base px-6 sm:px-8 py-2.5 sm:py-3.5 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 inline-flex items-center gap-2 group cursor-pointer active:scale-95"
+                    type="button"
+                    className="bg-white hover:bg-gray-100 text-[#0D1B2A] font-bold text-[11px] xs:text-xs sm:text-sm md:text-base px-4 py-2 xs:px-5 xs:py-2.5 sm:px-8 sm:py-3.5 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 inline-flex items-center gap-1.5 sm:gap-2 group cursor-pointer active:scale-95 focus-visible:outline-2 focus-visible:outline-[#FF9800]"
                   >
                     <span>Shop Now</span>
-                    <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 text-gray-900 transition-transform duration-200 group-hover:translate-x-1" />
+                    <ArrowRight className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-[#0D1B2A] transition-transform duration-200 group-hover:translate-x-1" />
                   </button>
                 </div>
               </div>
 
-              {/* Right Column: High-Res Clean Product Image */}
-              <div className="col-span-12 sm:col-span-5 lg:col-span-6 flex items-center justify-center sm:justify-end mt-4 sm:mt-0">
-                <div className="relative w-full max-w-[280px] sm:max-w-[340px] md:max-w-[440px] lg:max-w-[520px] aspect-[4/3] rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl ring-2 ring-white/20 transition-all duration-500 ease-out transform hover:scale-[1.02]">
+              {/* Right Column: High Quality Cutout Product Image */}
+              <div className="col-span-5 sm:col-span-5 lg:col-span-6 flex items-center justify-center sm:justify-end">
+                <div className="relative w-full max-w-[220px] xs:max-w-[270px] sm:max-w-[360px] md:max-w-[460px] lg:max-w-[540px] aspect-[4/3] flex items-center justify-center transition-all duration-500 ease-out transform scale-105 xs:scale-110 sm:scale-100 hover:scale-[1.03]">
                   <Image
                     src={currentSlide.image}
                     alt={currentSlide.alt}
                     fill
                     priority
-                    sizes="(max-width: 640px) 280px, (max-width: 1024px) 440px, 520px"
-                    className="object-cover"
+                    sizes="(max-width: 640px) 270px, (max-width: 1024px) 460px, 540px"
+                    className="object-contain drop-shadow-[0_20px_35px_rgba(0,0,0,0.38)]"
                   />
                 </div>
               </div>
@@ -227,90 +253,26 @@ export default function HeroSection({
 
           </div>
 
-          {/* Left Arrow Button */}
-          <button
-            onClick={prevSlide}
-            aria-label="Previous Slide"
-            className="w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 bg-white/95 hover:bg-white text-gray-900 rounded-full shadow-md hover:shadow-lg flex items-center justify-center absolute left-2.5 sm:left-4 md:left-6 top-1/2 -translate-y-1/2 z-20 transition-all hover:scale-110 active:scale-95 cursor-pointer"
-          >
-            <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 text-gray-900 stroke-[2.5]" />
-          </button>
-
-          {/* Right Arrow Button */}
-          <button
-            onClick={nextSlide}
-            aria-label="Next Slide"
-            className="w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 bg-white/95 hover:bg-white text-gray-900 rounded-full shadow-md hover:shadow-lg flex items-center justify-center absolute right-2.5 sm:right-4 md:right-6 top-1/2 -translate-y-1/2 z-20 transition-all hover:scale-110 active:scale-95 cursor-pointer"
-          >
-            <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 text-gray-900 stroke-[2.5]" />
-          </button>
-
-          {/* Bottom Pagination Indicator Dots (matches screenshot dots) */}
-          <div className="flex items-center justify-center gap-1.5 sm:gap-2 absolute bottom-3 sm:bottom-4 md:bottom-5 left-0 right-0 z-20">
+          {/* Bottom Pagination Indicator Dots */}
+          <div className="flex items-center justify-center gap-2 sm:gap-2.5 absolute bottom-3 sm:bottom-4 md:bottom-5 left-0 right-0 z-20">
             {SLIDES_DATA.map((slide, index) => {
               const isActive = index === currentIndex;
               return (
                 <button
                   key={slide.id}
                   onClick={() => setCurrentIndex(index)}
-                  aria-label={`Go to slide ${index + 1}`}
-                  className={`transition-all duration-300 rounded-full cursor-pointer ${
+                  type="button"
+                  aria-label={`Go to slide ${index + 1}: ${slide.kicker} ${slide.title}`}
+                  className={`transition-all duration-300 rounded-full cursor-pointer focus-visible:outline-2 focus-visible:outline-[#FF9800] ${
                     isActive 
-                      ? "bg-white w-6 sm:w-8 h-2 sm:h-2.5 shadow-xs" 
-                      : "bg-white/45 hover:bg-white/70 w-2 sm:w-2.5 h-2 sm:h-2.5"
+                      ? "bg-white w-7 sm:w-9 h-2 sm:h-2.5 shadow-xs" 
+                      : "bg-white/45 hover:bg-white/75 w-2 sm:w-2.5 h-2 sm:h-2.5"
                   }`}
                 />
               );
             })}
           </div>
 
-        </div>
-
-        {/* Floating Trust Strip Right Below Carousel Banner */}
-        <div className="mt-4 sm:mt-5 max-w-6xl mx-auto bg-white rounded-2xl lg:rounded-full py-3 sm:py-3.5 px-4 sm:px-8 shadow-sm border border-gray-100">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-6 items-center">
-            
-            <div className="flex items-center gap-2.5">
-              <ShieldCheck className="w-5 h-5 text-[#132c4a] shrink-0 stroke-[1.75]" />
-              <div>
-                <h4 className="text-xs sm:text-sm font-bold text-gray-900 leading-tight">100% Original</h4>
-                <p className="text-[10px] sm:text-[11px] text-gray-500 mt-0.5">Trusted brands & quality</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2.5">
-              <Truck className="w-5 h-5 text-[#132c4a] shrink-0 stroke-[1.75]" />
-              <div>
-                <h4 className="text-xs sm:text-sm font-bold text-gray-900 leading-tight">Free Shipping</h4>
-                <p className="text-[10px] sm:text-[11px] text-gray-500 mt-0.5">On orders above ₹999</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2.5">
-              <Shield className="w-5 h-5 text-[#132c4a] shrink-0 stroke-[1.75]" />
-              <div>
-                <h4 className="text-xs sm:text-sm font-bold text-gray-900 leading-tight">Safe Payments</h4>
-                <p className="text-[10px] sm:text-[11px] text-gray-500 mt-0.5">Multiple payment options</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2.5">
-              <RotateCcw className="w-5 h-5 text-[#132c4a] shrink-0 stroke-[1.75]" />
-              <div>
-                <h4 className="text-xs sm:text-sm font-bold text-gray-900 leading-tight">Easy Returns</h4>
-                <p className="text-[10px] sm:text-[11px] text-gray-500 mt-0.5">Within 7 Days</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2.5 col-span-2 sm:col-span-1">
-              <Headphones className="w-5 h-5 text-[#132c4a] shrink-0 stroke-[1.75]" />
-              <div>
-                <h4 className="text-xs sm:text-sm font-bold text-gray-900 leading-tight">Customer Support</h4>
-                <p className="text-[10px] sm:text-[11px] text-gray-500 mt-0.5">We&apos;re here to help</p>
-              </div>
-            </div>
-
-          </div>
         </div>
 
       </div>

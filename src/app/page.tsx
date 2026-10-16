@@ -8,71 +8,27 @@ import FeaturedPicks from "@/components/FeaturedPicks";
 import SpecialOfferBanner from "@/components/SpecialOfferBanner";
 import Testimonials from "@/components/Testimonials";
 import WhatsAppHelpStrip from "@/components/WhatsAppHelpStrip";
+import TrustBadges from "@/components/TrustBadges";
 import Footer from "@/components/Footer";
-import CartDrawer, { CartItem } from "@/components/CartDrawer";
-import { PRODUCTS_DATA, ProductItem } from "@/data/store-data";
+import CartDrawer from "@/components/CartDrawer";
+import { PRODUCTS_DATA } from "@/data/store-data";
+import { useCart } from "@/data/cart-store";
 
 export default function Home() {
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const [wishlistIds, setWishlistIds] = useState<string[]>([]);
-  const [isCartOpen, setIsCartOpen] = useState<boolean>(false);
 
-  // Cart Management
-  const handleAddToCart = (product: ProductItem) => {
-    setCartItems((prev) => {
-      const existing = prev.find((item) => item.product.id === product.id);
-      if (existing) {
-        return prev.map((item) =>
-          item.product.id === product.id
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        );
-      }
-      return [
-        ...prev,
-        {
-          product: {
-            ...product,
-            category: product.categorySlug,
-            discount: product.discount,
-            features: ["100% Genuine", "Safe for kids"],
-            specs: {},
-            inStock: true,
-            tag: "Bestseller",
-          },
-          quantity: 1,
-        },
-      ];
-    });
-  };
-
-  const handleUpdateQuantity = (productId: string, delta: number) => {
-    setCartItems((prev) => {
-      return prev
-        .map((item) => {
-          if (item.product.id === productId) {
-            const newQty = item.quantity + delta;
-            return newQty > 0 ? { ...item, quantity: newQty } : null;
-          }
-          return item;
-        })
-        .filter(Boolean) as CartItem[];
-    });
-  };
-
-  const handleRemoveItem = (productId: string) => {
-    setCartItems((prev) => prev.filter((item) => item.product.id !== productId));
-  };
-
-  const handleToggleWishlist = (productId: string) => {
-    setWishlistIds((prev) =>
-      prev.includes(productId)
-        ? prev.filter((id) => id !== productId)
-        : [...prev, productId]
-    );
-  };
+  const {
+    cartItems,
+    wishlistIds,
+    isCartOpen,
+    setIsCartOpen,
+    addToCart,
+    updateQuantity,
+    removeFromCart,
+    toggleWishlist,
+    totalCartCount,
+  } = useCart();
 
   const handleSelectCategory = (slug: string) => {
     setActiveCategory(slug);
@@ -111,12 +67,11 @@ export default function Home() {
     return result;
   }, [searchQuery]);
 
-  const totalCartCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
-
   return (
     <div className="min-h-screen bg-white text-gray-900 flex flex-col font-sans selection:bg-orange-500 selection:text-white">
-      {/* 1. Header with Top Announcement, Logo, Search, and Subnav */}
+      {/* 1. Header with Brand Logo, Navigation, Search, and Cart */}
       <Navbar
+        activePage="home"
         cartCount={totalCartCount}
         wishlistCount={wishlistIds.length}
         onOpenCart={() => setIsCartOpen(true)}
@@ -141,8 +96,11 @@ export default function Home() {
           products={filteredProducts}
           activeCategory={activeCategory}
           onSelectCategory={setActiveCategory}
-          onAddToCart={handleAddToCart}
-          onToggleWishlist={handleToggleWishlist}
+          onAddToCart={addToCart}
+          onBuyNow={(prod) => {
+            addToCart(prod);
+          }}
+          onToggleWishlist={toggleWishlist}
           wishlistIds={wishlistIds}
         />
 
@@ -156,9 +114,12 @@ export default function Home() {
 
         {/* 7. WhatsApp Help Strip: "Need help? Chat with us on WhatsApp" */}
         <WhatsAppHelpStrip />
+
+        {/* 8. Trust Badges Pill Bar (Before Footer) */}
+        <TrustBadges />
       </main>
 
-      {/* 8. Footer */}
+      {/* 9. Footer */}
       <Footer onSelectCategory={handleSelectCategory} />
 
       {/* Cart Slide-Over Drawer */}
@@ -166,8 +127,8 @@ export default function Home() {
         isOpen={isCartOpen}
         onClose={() => setIsCartOpen(false)}
         cartItems={cartItems}
-        onUpdateQuantity={handleUpdateQuantity}
-        onRemoveItem={handleRemoveItem}
+        onUpdateQuantity={updateQuantity}
+        onRemoveItem={removeFromCart}
       />
     </div>
   );

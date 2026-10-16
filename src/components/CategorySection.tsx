@@ -11,57 +11,62 @@ interface CategorySectionProps {
 
 export default function CategorySection({ onSelectCategory }: CategorySectionProps) {
   return (
-    <section id="categories" className="py-12 sm:py-16 bg-white">
+    <section id="categories" className="py-10 sm:py-16 bg-[#FFFFFF] border-b border-gray-100" aria-label="Shop by Category">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
         {/* Section Header */}
-        <div className="flex items-end justify-between mb-8 sm:mb-10">
+        <div className="flex items-end justify-between mb-6 sm:mb-8">
           <div>
-            <h2 className="text-2xl sm:text-3xl font-black text-[#0b1b2b] tracking-tight">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold font-heading text-[#0D1B2A] tracking-tight">
               Find their next favourite
             </h2>
-            <p className="text-xs sm:text-sm text-gray-500 mt-1">
-              Top categories for endless smiles
+            <p className="text-xs sm:text-sm text-gray-500 mt-1 font-medium">
+              Top curated categories for endless smiles & adventures
             </p>
           </div>
 
           <button
             onClick={() => onSelectCategory("all")}
-            className="text-xs sm:text-sm font-semibold text-gray-700 hover:text-orange-600 flex items-center gap-1 transition-colors group shrink-0"
+            type="button"
+            className="text-xs sm:text-sm font-semibold text-gray-700 hover:text-[#FF9800] flex items-center gap-1 transition-colors group shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-[#FF9800]"
           >
             <span>View all categories</span>
             <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
           </button>
         </div>
 
-        {/* 6 Category Cards Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
+        {/* 8 Category Cards Grid: 2 per row on Mobile, 4 per row on Desktop */}
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5 lg:gap-6">
           {CATEGORIES_DATA.map((cat) => (
-            <div
+            <button
               key={cat.id}
+              type="button"
               onClick={() => onSelectCategory(cat.slug)}
-              className="group cursor-pointer rounded-2xl overflow-hidden border border-gray-100 bg-white shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1"
+              className="group text-left w-full h-full cursor-pointer rounded-2xl overflow-hidden border border-gray-100/90 bg-[#FFFFFF] shadow-xs hover:shadow-md transition-all duration-300 hover:-translate-y-1 flex flex-col justify-between focus-visible:ring-2 focus-visible:ring-[#FF9800] focus-visible:outline-none"
+              aria-label={`Shop ${cat.name}`}
             >
-              {/* Category Image */}
-              <div className="relative aspect-[16/10] w-full overflow-hidden bg-gray-100">
+              {/* Category Image Container */}
+              <div className="relative aspect-[16/11] w-full overflow-hidden bg-[#F5F7FA] flex items-center justify-center p-3 sm:p-4">
                 <Image
                   src={cat.imageUrl}
                   alt={cat.name}
                   fill
-                  className="object-cover object-center group-hover:scale-105 transition-transform duration-500"
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  className="object-contain p-2.5 group-hover:scale-108 transition-transform duration-500"
+                  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                 />
               </div>
 
               {/* Bottom Label Bar */}
-              <div className="p-4 sm:p-4.5 flex items-center justify-between bg-white border-t border-gray-50">
-                <h3 className="text-sm sm:text-base font-bold text-gray-900 group-hover:text-orange-600 transition-colors">
+              <div className="p-3 sm:p-4 flex items-center justify-between bg-white border-t border-gray-50/80 flex-1">
+                <h3 className="text-xs sm:text-sm md:text-[15px] font-bold text-[#0D1B2A] group-hover:text-[#FF9800] transition-colors line-clamp-1">
                   {cat.name}
                 </h3>
-                <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-orange-600 group-hover:translate-x-1 transition-all" />
+                <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400 group-hover:text-[#FF9800] group-hover:translate-x-1 transition-all shrink-0 ml-1.5" />
               </div>
-            </div>
+            </button>
           ))}
         </div>
+
       </div>
     </section>
   );

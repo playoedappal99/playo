@@ -5,7 +5,7 @@ import { MessageCircle, ArrowRight } from "lucide-react";
 
 export default function WhatsAppHelpStrip() {
   return (
-    <section className="py-6 sm:py-8 bg-white">
+    <section id="contact" className="py-6 sm:py-8 bg-white scroll-mt-24">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="rounded-2xl bg-[#e8f7ee] p-5 sm:p-6 flex flex-col sm:flex-row items-center justify-between gap-4 border border-[#c3edd1]">
           {/* Left Info */}
@@ -14,7 +14,7 @@ export default function WhatsAppHelpStrip() {
               <MessageCircle className="w-6 h-6 fill-current" />
             </div>
             <div>
-              <h3 className="text-base sm:text-lg font-black text-gray-900 leading-tight">
+              <h3 className="text-base sm:text-lg font-bold font-heading text-gray-900 leading-tight">
                 Need help? Chat with us on WhatsApp
               </h3>
               <p className="text-xs sm:text-sm text-gray-600 mt-0.5">
