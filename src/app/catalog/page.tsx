@@ -743,6 +743,13 @@ function CatalogContent() {
                       <span>Buy Now</span>
                     </button>
                   </div>
+                  <Link
+                    href={`/product/${quickViewProduct.id}`}
+                    onClick={() => setQuickViewProduct(null)}
+                    className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-1.5"
+                  >
+                    <span>View Full Product Details →</span>
+                  </Link>
                   <a
                     href={`https://wa.me/919072345678?text=Hi%20Playo%20Edappal,%20I%20am%20interested%20in%20${encodeURIComponent(quickViewProduct.name)}`}
                     target="_blank"

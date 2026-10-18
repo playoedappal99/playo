@@ -15,6 +15,17 @@ export interface ProductItem {
   scale?: string;
   color?: string;
   colorHex?: string;
+  availableColors?: string | {
+    name: string;
+    hex?: string;
+    inStock?: boolean;
+    imageIndex?: number;
+  }[];
+  galleryImages?: {
+    url: string;
+    label: string;
+    angleName?: string;
+  }[];
   price: number;
   originalPrice: number;
   discount: string;
@@ -23,6 +34,12 @@ export interface ProductItem {
   imageUrl: string;
   tag?: string;
   features?: string[];
+  description?: string;
+  bullets?: string[];
+  detailsFeatures?: {
+    label: string;
+    value: string;
+  }[];
   specs?: {
     ageGroup?: string;
     battery?: string;
@@ -31,6 +48,8 @@ export interface ProductItem {
     speed?: string;
     brand?: string;
     color?: string;
+    category?: string;
+    [key: string]: string | undefined;
   };
   inStock?: boolean;
 }
@@ -108,52 +127,121 @@ export const PRODUCTS_DATA: ProductItem[] = [
     id: "prod-porsche-rc",
     name: "PORSCHE DRIFT RC",
     categorySlug: "rc-cars",
-    category: "RC Cars",
+    category: "GIFTS",
     scale: "1:24",
     price: 1990,
     originalPrice: 2990,
     discount: "33% OFF",
     rating: 5,
     reviewsCount: 128,
-    imageUrl: "/images/catalog/porsche-drift-rc.jpg",
+    imageUrl: "/images/catalog/porsche-drift-violet.jpg",
+    galleryImages: [
+      {
+        url: "/images/catalog/porsche-drift-violet.jpg",
+        label: "PORSCHE DRIFT RC angle 1",
+        angleName: "Angle 1",
+      },
+      {
+        url: "/images/catalog/porsche-drift-violet-2.jpg",
+        label: "PORSCHE DRIFT RC angle 2",
+        angleName: "Angle 2",
+      },
+    ],
     tag: "Bestseller",
-    color: "black",
-    colorHex: "#111827",
+    color: "VIOLET",
+    colorHex: "#7c3aed",
+    availableColors: [
+      { name: "VIOLET", hex: "#7c3aed", inStock: true, imageIndex: 0 },
+    ],
     inStock: true,
-    features: ["2.4GHz High-Precision Remote", "4WD Drift Tires + Rubber Tires", "Gift Box Edition", "LED Underglow Lights"],
+    detailsFeatures: [
+      { label: "Scale", value: "1:24" },
+      { label: "Category", value: "GIFTS" },
+      { label: "Color", value: "VIOLET" },
+      { label: "Material", value: "Diecast Metal with Plastic Parts" },
+    ],
+    features: [
+      "Scale: 1:24",
+      "Category: GIFTS",
+      "Color: VIOLET",
+      "Material: Diecast Metal with Plastic Parts",
+    ],
+    description: "Celebrate every beautiful moment with us",
+    bullets: [
+      "Premium hamper box",
+      "RC car with gun type remote",
+      "extra tyre and drift cones",
+    ],
     specs: {
       brand: "Porsche",
       scale: "1:24",
+      category: "GIFTS",
       ageGroup: "6+ Years",
       battery: "Rechargeable 7.4V Li-ion",
       speed: "18-20 km/h",
-      material: "Reinforced ABS Shell",
-      color: "Black",
+      material: "Diecast Metal with Plastic Parts",
+      color: "VIOLET",
     },
   },
   {
     id: "prod-drift-giftbox",
     name: "DRIFT RC CAR WITH GIFT BOX",
     categorySlug: "rc-cars",
-    category: "RC Cars",
+    category: "GIFTS",
     price: 1990,
     originalPrice: 2890,
     discount: "31% OFF",
     rating: 5,
     reviewsCount: 94,
     imageUrl: "/images/catalog/drift-rc-gift-box.jpg",
+    galleryImages: [
+      {
+        url: "/images/catalog/drift-rc-angle-1.jpg",
+        label: "DRIFT RC CAR WITH GIFT BOX angle 1",
+        angleName: "Angle 1",
+      },
+      {
+        url: "/images/catalog/drift-rc-angle-2.jpg",
+        label: "DRIFT RC CAR WITH GIFT BOX angle 2",
+        angleName: "Angle 2",
+      },
+      {
+        url: "/images/catalog/drift-rc-gift-box.jpg",
+        label: "DRIFT RC CAR WITH GIFT BOX",
+        angleName: "Main View",
+      },
+    ],
     tag: "Gift Special",
-    color: "black",
-    colorHex: "#111827",
+    color: "BLACK, WHITE & BLUE",
+    availableColors: [
+      { name: "BLACK", hex: "#111827", inStock: false, imageIndex: 0 },
+      { name: "WHITE & BLUE", hex: "#2563eb", inStock: false, imageIndex: 1 },
+    ],
     inStock: false,
-    features: ["Deluxe Gift Box with Satin Bow", "RWD Drift Precision", "Ergonomic Pistol Grip Controller", "High-Torque Motor"],
+    detailsFeatures: [
+      { label: "Category", value: "GIFTS" },
+      { label: "Color", value: "BLACK, WHITE & BLUE" },
+      { label: "Material", value: "Diecast Metal with Plastic Parts" },
+    ],
+    features: [
+      "Category: GIFTS",
+      "Color: BLACK, WHITE & BLUE",
+      "Material: Diecast Metal with Plastic Parts",
+    ],
+    description: "Celebrate every beautiful moment with us",
+    bullets: [
+      "Premium hamper box",
+      "RC car with gun type remote",
+      "extra tyre and drift cones",
+    ],
     specs: {
-      brand: "DriftPro",
+      category: "GIFTS",
+      color: "BLACK, WHITE & BLUE",
+      material: "Diecast Metal with Plastic Parts",
+      brand: "Playo Special",
       ageGroup: "6+ Years",
       battery: "USB Rechargeable Pack",
-      speed: "18 km/h",
-      material: "ABS Body with Metal Axles",
-      color: "Black",
+      speed: "18-20 km/h",
     },
   },
   {

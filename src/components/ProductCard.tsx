@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { 
   Heart, 
   ShoppingCart, 
@@ -63,9 +64,9 @@ export default function ProductCard({
       >
         <div>
           {/* Top Image Container */}
-          <div
-            onClick={() => onQuickView && onQuickView(product)}
-            className="relative aspect-square w-full bg-white p-2.5 sm:p-4 flex items-center justify-center overflow-hidden border-b border-gray-100/60 cursor-pointer"
+          <Link
+            href={`/product/${product.id}`}
+            className="relative aspect-square w-full bg-white p-2.5 sm:p-4 flex items-center justify-center overflow-hidden border-b border-gray-100/60 cursor-pointer block"
           >
             <div className="relative w-full h-full">
               <Image
@@ -81,6 +82,7 @@ export default function ProductCard({
             <button
               type="button"
               onClick={(e) => {
+                e.preventDefault();
                 e.stopPropagation();
                 onToggleWishlist(product.id);
               }}
@@ -95,7 +97,7 @@ export default function ProductCard({
                 }`}
               />
             </button>
-          </div>
+          </Link>
 
           {/* Product Details */}
           <div className="p-2.5 sm:p-4 pb-1.5 sm:pb-2 space-y-1 sm:space-y-2">
@@ -121,12 +123,13 @@ export default function ProductCard({
             </div>
 
             {/* Product Name */}
-            <h3
-              onClick={() => onQuickView && onQuickView(product)}
-              className="text-xs sm:text-sm font-bold text-gray-900 leading-snug group-hover:text-sky-600 transition-colors line-clamp-2 min-h-[2rem] sm:min-h-[2.5rem] cursor-pointer"
-            >
-              {product.name}
-            </h3>
+            <Link href={`/product/${product.id}`} className="block">
+              <h3
+                className="text-xs sm:text-sm font-bold text-gray-900 leading-snug group-hover:text-sky-600 transition-colors line-clamp-2 min-h-[2rem] sm:min-h-[2.5rem] cursor-pointer"
+              >
+                {product.name}
+              </h3>
+            </Link>
 
             {/* Price */}
             <div className="pt-0.5">
@@ -187,9 +190,9 @@ export default function ProductCard({
     >
       <div>
         {/* Top Media Container */}
-        <div 
-          onClick={() => onQuickView && onQuickView(product)}
-          className="relative aspect-[4/3] w-full bg-gradient-to-b from-[#f8fafc] to-[#f1f5f9]/50 p-2.5 sm:p-3.5 flex items-center justify-center overflow-hidden border-b border-gray-50 cursor-pointer"
+        <Link
+          href={`/product/${product.id}`}
+          className="relative aspect-[4/3] w-full bg-gradient-to-b from-[#f8fafc] to-[#f1f5f9]/50 p-2.5 sm:p-3.5 flex items-center justify-center overflow-hidden border-b border-gray-50 cursor-pointer block"
         >
           {/* Product Image */}
           <div className="relative w-full h-full">
@@ -206,6 +209,7 @@ export default function ProductCard({
           <button
             type="button"
             onClick={(e) => {
+              e.preventDefault();
               e.stopPropagation();
               onToggleWishlist(product.id);
             }}
@@ -228,7 +232,7 @@ export default function ProductCard({
               </span>
             </div>
           )}
-        </div>
+        </Link>
 
         {/* Product Details */}
         <div className="p-3 sm:p-4 pb-2 sm:pb-3 space-y-1.5 sm:space-y-2">
@@ -252,12 +256,13 @@ export default function ProductCard({
           </div>
 
           {/* Product Name */}
-          <h3 
-            onClick={() => onQuickView && onQuickView(product)}
-            className="text-xs sm:text-sm font-bold text-[#0D1B2A] line-clamp-2 leading-snug group-hover:text-amber-600 transition-colors min-h-[2.5rem] sm:min-h-[2.75rem] cursor-pointer"
-          >
-            {product.name}
-          </h3>
+          <Link href={`/product/${product.id}`} className="block">
+            <h3 
+              className="text-xs sm:text-sm font-bold text-[#0D1B2A] line-clamp-2 leading-snug group-hover:text-amber-600 transition-colors min-h-[2.5rem] sm:min-h-[2.75rem] cursor-pointer"
+            >
+              {product.name}
+            </h3>
+          </Link>
 
           {/* Quick Specs Pills */}
           {product.specs?.ageGroup && (
