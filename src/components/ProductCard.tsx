@@ -5,7 +5,6 @@ import Image from "next/image";
 import { 
   Heart, 
   ShoppingCart, 
-  Check, 
   Star, 
   Eye
 } from "lucide-react";
@@ -36,23 +35,22 @@ export default function ProductCard({
   className = "",
   variant = "catalog",
 }: ProductCardProps) {
-  const [justAdded, setJustAdded] = useState(false);
-
   const handleAddClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     onAddToCart(product);
-    setJustAdded(true);
-    setTimeout(() => {
-      setJustAdded(false);
-    }, 1500);
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent("playo_cart_toast", {
+          detail: { product, message: "Added to cart ✅" },
+        })
+      );
+    }
   };
 
   const handleBuyNowClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     onBuyNow(product);
   };
-
-  const isShowAddedState = justAdded || (inCart && cartQuantity > 0);
 
   if (variant === "catalog") {
     const isOutOfStock = product.inStock === false;
@@ -163,20 +161,11 @@ export default function ProductCard({
               <button
                 type="button"
                 onClick={handleAddClick}
-                className={`py-1.5 sm:py-2.5 px-1 sm:px-2 rounded-lg sm:rounded-xl text-[10px] sm:text-sm font-bold flex items-center justify-center transition-all duration-200 cursor-pointer shadow-xs active:scale-95 truncate ${
-                  isShowAddedState
-                    ? "bg-emerald-600 hover:bg-emerald-700 text-white"
-                    : "bg-[#0D1B2A] hover:bg-black text-white"
-                }`}
+                className="py-1.5 sm:py-2.5 px-1 sm:px-2 rounded-lg sm:rounded-xl text-[10px] sm:text-sm font-bold flex items-center justify-center transition-all duration-200 cursor-pointer shadow-xs active:scale-95 truncate bg-[#0D1B2A] hover:bg-black text-white"
+                title="Add to Cart"
               >
-                {isShowAddedState ? (
-                  <span className="flex items-center gap-0.5 sm:gap-1">
-                    <Check className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
-                    <span className="truncate">{cartQuantity > 1 ? `In Cart (${cartQuantity})` : "Added"}</span>
-                  </span>
-                ) : (
-                  <span className="truncate">Add to Cart</span>
-                )}
+                <ShoppingCart className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 mr-1 opacity-90 hidden xs:inline" />
+                <span className="truncate">Add to Cart</span>
               </button>
               <button
                 type="button"
@@ -305,26 +294,11 @@ export default function ProductCard({
         <button
           type="button"
           onClick={handleAddClick}
-          className={`py-2 sm:py-2.5 px-1.5 sm:px-2 rounded-xl text-[10px] sm:text-xs font-bold flex items-center justify-center gap-1 sm:gap-1.5 transition-all duration-200 cursor-pointer shadow-xs active:scale-95 focus-visible:outline-2 focus-visible:outline-[#FF9800] ${
-            isShowAddedState
-              ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/20"
-              : "bg-[#0D1B2A] hover:bg-black text-white hover:shadow-md hover:-translate-y-0.5"
-          }`}
-          title={isShowAddedState ? "Added to Cart" : "Add to Cart"}
+          className="py-2 sm:py-2.5 px-1.5 sm:px-2 rounded-xl text-[10px] sm:text-xs font-bold flex items-center justify-center gap-1 sm:gap-1.5 transition-all duration-200 cursor-pointer shadow-xs active:scale-95 bg-[#0D1B2A] hover:bg-black text-white hover:shadow-md hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-[#0D1B2A]"
+          title="Add to Cart"
         >
-          {isShowAddedState ? (
-            <>
-              <Check className="w-3.5 h-3.5 shrink-0 stroke-[2.5]" />
-              <span className="truncate">
-                {cartQuantity > 1 ? `In Cart (${cartQuantity})` : "Added"}
-              </span>
-            </>
-          ) : (
-            <>
-              <ShoppingCart className="w-3.5 h-3.5 shrink-0 hidden xs:inline opacity-90" />
-              <span className="truncate">Add to Cart</span>
-            </>
-          )}
+          <ShoppingCart className="w-3.5 h-3.5 shrink-0 hidden xs:inline opacity-90" />
+          <span className="truncate">Add to Cart</span>
         </button>
 
         {/* Buy Now Button */}

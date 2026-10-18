@@ -2,6 +2,7 @@
 
 import React from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { X, Trash2, Plus, Minus, ShoppingBag, ArrowRight, Phone } from "lucide-react";
 import { ProductItem } from "../data/store-data";
 
@@ -170,16 +171,25 @@ export default function CartDrawer({
                 </div>
               </div>
 
+              {/* Primary Instant Checkout with Razorpay & Shipping */}
+              <Link
+                href="/checkout"
+                onClick={onClose}
+                className="w-full py-3.5 px-4 rounded-2xl bg-[#0D1B2A] hover:bg-[#16283C] text-white font-extrabold text-sm shadow-xl shadow-slate-900/10 flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-95 cursor-pointer"
+              >
+                <span>Proceed to Checkout</span>
+                <ArrowRight className="w-4 h-4 ml-auto" />
+              </Link>
+
               {/* Direct WhatsApp Checkout */}
               <a
                 href={`https://wa.me/919072345678?text=${whatsappMessage}`}
                 target="_blank"
                 rel="noreferrer"
-                className="w-full py-3.5 px-4 rounded-2xl bg-[#16A34A] hover:bg-[#15803D] text-white font-bold text-sm shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-95 cursor-pointer"
+                className="w-full py-2.5 px-4 rounded-2xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer border border-emerald-200"
               >
-                <Phone className="w-4 h-4" />
-                <span>Complete Order on WhatsApp</span>
-                <ArrowRight className="w-4 h-4 ml-auto" />
+                <Phone className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Order via WhatsApp Instead</span>
               </a>
 
               <p className="text-[10px] text-center text-gray-400">

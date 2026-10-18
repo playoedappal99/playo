@@ -49,6 +49,13 @@ export function useCart() {
     }
   }, [wishlistIds, isMounted]);
 
+  // Listen to open cart drawer event
+  useEffect(() => {
+    const handleOpenCart = () => setIsCartOpen(true);
+    window.addEventListener("playo_open_cart", handleOpenCart);
+    return () => window.removeEventListener("playo_open_cart", handleOpenCart);
+  }, []);
+
   const addToCart = (product: ProductItem, openDrawer: boolean = false) => {
     setCartItems((prev) => {
       const existing = prev.find((item) => item.product.id === product.id);
@@ -75,6 +82,16 @@ export function useCart() {
         },
       ];
     });
+
+    // Trigger toast notification
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent("playo_cart_toast", {
+          detail: { product, message: "Added to cart ✅" },
+        })
+      );
+    }
+
     if (openDrawer) {
       setIsCartOpen(true);
     }
