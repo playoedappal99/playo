@@ -20,7 +20,7 @@ interface NavbarProps {
   searchQuery?: string;
   setSearchQuery?: (query: string) => void;
   onSelectCategory?: (categorySlug: string) => void;
-  activePage?: "home" | "catalog" | "my-orders" | "contact";
+  activePage?: "home" | "catalog" | "my-orders" | "contact" | "admin";
 }
 
 export default function Navbar({

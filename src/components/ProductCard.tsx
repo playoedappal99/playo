@@ -163,7 +163,11 @@ export default function ProductCard({
               <button
                 type="button"
                 onClick={handleAddClick}
-                className="py-1.5 sm:py-2.5 px-1 sm:px-2 rounded-lg sm:rounded-xl text-[10px] sm:text-sm font-semibold bg-[#3ba4e6] hover:bg-[#2892d5] text-white flex items-center justify-center transition-all duration-200 cursor-pointer shadow-xs active:scale-95 truncate"
+                className={`py-1.5 sm:py-2.5 px-1 sm:px-2 rounded-lg sm:rounded-xl text-[10px] sm:text-sm font-bold flex items-center justify-center transition-all duration-200 cursor-pointer shadow-xs active:scale-95 truncate ${
+                  isShowAddedState
+                    ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                    : "bg-[#0D1B2A] hover:bg-black text-white"
+                }`}
               >
                 {isShowAddedState ? (
                   <span className="flex items-center gap-0.5 sm:gap-1">
@@ -177,7 +181,7 @@ export default function ProductCard({
               <button
                 type="button"
                 onClick={handleBuyNowClick}
-                className="py-1.5 sm:py-2.5 px-1 sm:px-2 rounded-lg sm:rounded-xl text-[10px] sm:text-sm font-semibold bg-[#13202e] hover:bg-[#0b141d] text-white flex items-center justify-center transition-all duration-200 cursor-pointer shadow-xs active:scale-95 truncate"
+                className="py-1.5 sm:py-2.5 px-1 sm:px-2 rounded-lg sm:rounded-xl text-[10px] sm:text-sm font-bold bg-[#FF9800] hover:bg-[#F57C00] text-white flex items-center justify-center transition-all duration-200 cursor-pointer shadow-xs active:scale-95 truncate"
               >
                 Buy Now
               </button>
@@ -304,7 +308,7 @@ export default function ProductCard({
           className={`py-2 sm:py-2.5 px-1.5 sm:px-2 rounded-xl text-[10px] sm:text-xs font-bold flex items-center justify-center gap-1 sm:gap-1.5 transition-all duration-200 cursor-pointer shadow-xs active:scale-95 focus-visible:outline-2 focus-visible:outline-[#FF9800] ${
             isShowAddedState
               ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/20"
-              : "bg-[#0D1B2A] hover:bg-[#1A2E44] text-white hover:shadow-md hover:-translate-y-0.5"
+              : "bg-[#0D1B2A] hover:bg-black text-white hover:shadow-md hover:-translate-y-0.5"
           }`}
           title={isShowAddedState ? "Added to Cart" : "Add to Cart"}
         >
@@ -327,7 +331,7 @@ export default function ProductCard({
         <button
           type="button"
           onClick={handleBuyNowClick}
-          className="py-2 sm:py-2.5 px-2 rounded-xl text-[10px] sm:text-xs font-black text-white bg-gradient-to-r from-amber-500 via-[#FF9800] to-orange-500 hover:from-amber-600 hover:via-[#F57C00] hover:to-orange-600 flex items-center justify-center shadow-sm shadow-orange-500/25 hover:shadow-lg hover:shadow-orange-500/35 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer active:scale-95 focus-visible:outline-2 focus-visible:outline-[#FF9800]"
+          className="py-2 sm:py-2.5 px-2 rounded-xl text-[10px] sm:text-xs font-black text-white bg-[#FF9800] hover:bg-[#F57C00] flex items-center justify-center shadow-sm shadow-orange-500/25 hover:shadow-lg hover:shadow-orange-500/35 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer active:scale-95 focus-visible:outline-2 focus-visible:outline-[#FF9800]"
           title="Instant 1-Step Checkout"
         >
           <span className="truncate">Buy Now</span>

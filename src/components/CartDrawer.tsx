@@ -2,7 +2,7 @@
 
 import React from "react";
 import Image from "next/image";
-import { X, Trash2, Plus, Minus, ShoppingBag, ArrowRight, Phone, Sparkles } from "lucide-react";
+import { X, Trash2, Plus, Minus, ShoppingBag, ArrowRight, Phone } from "lucide-react";
 import { ProductItem } from "../data/store-data";
 
 export interface CartItem {
@@ -32,10 +32,7 @@ export default function CartDrawer({
     0
   );
 
-  const freeDeliveryThreshold = 1999;
-  const isFreeDelivery = subtotal >= freeDeliveryThreshold;
-  const deliveryFee = subtotal === 0 ? 0 : isFreeDelivery ? 0 : 149;
-  const finalTotal = subtotal + deliveryFee;
+  const finalTotal = subtotal;
 
   // Build WhatsApp prefilled order message
   const itemsText = cartItems
@@ -49,7 +46,7 @@ export default function CartDrawer({
 
   const whatsappMessage = `*NEW ORDER from Playo Edappal Website*%0A%0A${itemsText}%0A%0A*Total Amount: ₹${finalTotal.toLocaleString(
     "en-IN"
-  )}*%0A${isFreeDelivery ? "⚡ Free Local Delivery Applied" : "Standard Delivery"}%0A%0APlease confirm availability and delivery details!`;
+  )}*%0A⚡ Free Doorstep Delivery%0A%0APlease confirm availability and delivery details!`;
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden bg-black/60 backdrop-blur-sm animate-fadeIn">
@@ -72,28 +69,6 @@ export default function CartDrawer({
             >
               <X className="w-5 h-5" />
             </button>
-          </div>
-
-          {/* Free Shipping Progress */}
-          <div className="bg-amber-50 px-5 py-3 border-b border-amber-100">
-            {isFreeDelivery ? (
-              <p className="text-xs font-bold text-emerald-700 flex items-center gap-1.5">
-                <Sparkles className="w-4 h-4 text-emerald-600" />
-                Congratulations! You unlocked FREE Doorstep Delivery.
-              </p>
-            ) : (
-              <div>
-                <p className="text-xs font-medium text-amber-900 mb-1.5">
-                  Add <span className="font-bold text-amber-700">₹{(freeDeliveryThreshold - subtotal).toLocaleString("en-IN")}</span> more for FREE delivery in Edappal & Kerala!
-                </p>
-                <div className="w-full bg-amber-200 h-1.5 rounded-full overflow-hidden">
-                  <div
-                    className="bg-amber-600 h-full transition-all duration-300 rounded-full"
-                    style={{ width: `${Math.min(100, (subtotal / freeDeliveryThreshold) * 100)}%` }}
-                  />
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Cart Items List */}
@@ -185,13 +160,7 @@ export default function CartDrawer({
                 </div>
                 <div className="flex justify-between">
                   <span>Delivery in Kerala</span>
-                  <span>
-                    {isFreeDelivery ? (
-                      <span className="text-emerald-600 font-bold">FREE</span>
-                    ) : (
-                      "₹149"
-                    )}
-                  </span>
+                  <span className="text-emerald-600 font-bold">FREE</span>
                 </div>
                 <div className="flex justify-between text-base font-black text-gray-950 pt-2 border-t border-gray-100">
                   <span>Total Amount</span>

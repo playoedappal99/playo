@@ -178,12 +178,17 @@ export default function Footer({
                 <a href="#footer" className="hover:text-white transition-colors">About Playo Edappal</a>
               </li>
               <li>
+                <Link href="/admin" className="text-gray-400 hover:text-[#FF9800] transition-colors">
+                  Admin Dashboard
+                </Link>
+              </li>
+              <li>
                 <a href="https://wa.me/919072345678" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">
                   WhatsApp Support
                 </a>
               </li>
               <li>
-                <span className="text-gray-400 block pt-1">Free delivery above ₹999</span>
+                <span className="text-gray-400 block pt-1">Free doorstep delivery</span>
               </li>
               <li>
                 <span className="text-gray-400 block">7-day replacement guarantee</span>

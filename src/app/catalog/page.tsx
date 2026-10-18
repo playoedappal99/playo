@@ -725,7 +725,7 @@ function CatalogContent() {
                         addToCart(quickViewProduct);
                         setQuickViewProduct(null);
                       }}
-                      className="py-3 px-3 bg-[#3ba4e6] hover:bg-[#2892d5] text-white font-bold text-xs sm:text-sm rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5 cursor-pointer active:scale-98"
+                      className="py-3 px-3 bg-[#0D1B2A] hover:bg-black text-white font-bold text-xs sm:text-sm rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5 cursor-pointer active:scale-98"
                     >
                       <ShoppingCart className="w-4 h-4 shrink-0" />
                       <span>Add to Cart</span>
@@ -738,7 +738,7 @@ function CatalogContent() {
                         setQuickViewProduct(null);
                         setBuyNowProduct(prod);
                       }}
-                      className="py-3 px-3 bg-[#13202e] hover:bg-black text-white font-bold text-xs sm:text-sm rounded-xl transition-all shadow-sm flex items-center justify-center cursor-pointer active:scale-98"
+                      className="py-3 px-3 bg-[#FF9800] hover:bg-[#F57C00] text-white font-bold text-xs sm:text-sm rounded-xl transition-all shadow-sm shadow-orange-500/25 flex items-center justify-center cursor-pointer active:scale-98"
                     >
                       <span>Buy Now</span>
                     </button>

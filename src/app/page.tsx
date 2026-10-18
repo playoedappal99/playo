@@ -6,7 +6,6 @@ import HeroSection from "@/components/HeroSection";
 import CategorySection from "@/components/CategorySection";
 import FeaturedPicks from "@/components/FeaturedPicks";
 import SpecialOfferBanner from "@/components/SpecialOfferBanner";
-import Testimonials from "@/components/Testimonials";
 import WhatsAppHelpStrip from "@/components/WhatsAppHelpStrip";
 import TrustBadges from "@/components/TrustBadges";
 import Footer from "@/components/Footer";
@@ -109,10 +108,7 @@ export default function Home() {
           onShopNow={() => handleSelectCategory("ride-ons")}
         />
 
-        {/* 6. Customer Testimonials: "What our happy customers say" */}
-        <Testimonials />
-
-        {/* 7. WhatsApp Help Strip: "Need help? Chat with us on WhatsApp" */}
+        {/* 6. WhatsApp Help Strip: "Need help? Chat with us on WhatsApp" */}
         <WhatsAppHelpStrip />
 
         {/* 8. Trust Badges Pill Bar (Before Footer) */}

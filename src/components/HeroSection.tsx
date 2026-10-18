@@ -203,15 +203,15 @@ export default function HeroSection({
             <div className="w-full grid grid-cols-12 items-center px-4 xs:px-6 sm:px-12 md:px-16 lg:px-20 py-5 sm:py-8 md:py-10">
               
               {/* Left Column: Bold Headline & CTA Button */}
-              <div className="col-span-7 sm:col-span-7 lg:col-span-6 z-10 space-y-1.5 xs:space-y-2 sm:space-y-3 pr-1 sm:pr-4">
+              <div className="col-span-6 sm:col-span-7 lg:col-span-6 z-10 space-y-2 xs:space-y-2.5 sm:space-y-3 pr-1 sm:pr-4">
                 <div className="flex flex-col tracking-tight">
                   {/* Line 1: Kicker / White text */}
-                  <span className="font-outfit font-black text-2xl xs:text-3xl sm:text-5xl md:text-6xl lg:text-7xl text-white leading-[1.05] drop-shadow-xs">
+                  <span className="font-outfit font-black text-2xl xs:text-3xl sm:text-5xl md:text-6xl lg:text-7xl text-white leading-[1.08] drop-shadow-sm">
                     {currentSlide.kicker}
                   </span>
                   {/* Line 2: Highlighted Keyword in Vibrant Yellow or Orange */}
                   <span 
-                    className="font-outfit font-black text-2xl xs:text-3xl sm:text-5xl md:text-6xl lg:text-7xl leading-[1.05] drop-shadow-xs transition-colors duration-500"
+                    className="font-outfit font-black text-2xl xs:text-3xl sm:text-5xl md:text-6xl lg:text-7xl leading-[1.08] drop-shadow-sm transition-colors duration-500"
                     style={{ color: currentSlide.accentColor }}
                   >
                     {currentSlide.title}
@@ -223,27 +223,27 @@ export default function HeroSection({
                 </p>
 
                 {/* Clear Shop Now Pill CTA Button */}
-                <div className="pt-1.5 xs:pt-2 sm:pt-4">
+                <div className="pt-2 xs:pt-2.5 sm:pt-4">
                   <button
                     onClick={handleCtaClick}
                     type="button"
-                    className="bg-white hover:bg-gray-100 text-[#0D1B2A] font-bold text-[11px] xs:text-xs sm:text-sm md:text-base px-4 py-2 xs:px-5 xs:py-2.5 sm:px-8 sm:py-3.5 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 inline-flex items-center gap-1.5 sm:gap-2 group cursor-pointer active:scale-95 focus-visible:outline-2 focus-visible:outline-[#FF9800]"
+                    className="bg-white hover:bg-gray-100 text-[#0D1B2A] font-extrabold text-xs xs:text-sm sm:text-base px-4 py-2 xs:px-5 xs:py-2.5 sm:px-8 sm:py-3.5 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 inline-flex items-center gap-1.5 sm:gap-2 group cursor-pointer active:scale-95 focus-visible:outline-2 focus-visible:outline-[#FF9800]"
                   >
                     <span>Shop Now</span>
-                    <ArrowRight className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-[#0D1B2A] transition-transform duration-200 group-hover:translate-x-1" />
+                    <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 text-[#0D1B2A] transition-transform duration-200 group-hover:translate-x-1 stroke-[2.5]" />
                   </button>
                 </div>
               </div>
 
               {/* Right Column: High Quality Cutout Product Image */}
-              <div className="col-span-5 sm:col-span-5 lg:col-span-6 flex items-center justify-center sm:justify-end">
-                <div className="relative w-full max-w-[220px] xs:max-w-[270px] sm:max-w-[360px] md:max-w-[460px] lg:max-w-[540px] aspect-[4/3] flex items-center justify-center transition-all duration-500 ease-out transform scale-105 xs:scale-110 sm:scale-100 hover:scale-[1.03]">
+              <div className="col-span-6 sm:col-span-5 lg:col-span-6 flex items-center justify-center sm:justify-end">
+                <div className="relative w-full h-36 xs:h-44 sm:h-auto sm:aspect-[4/3] max-w-[280px] sm:max-w-[360px] md:max-w-[460px] lg:max-w-[540px] flex items-center justify-center transition-all duration-500 ease-out transform scale-110 xs:scale-115 sm:scale-100 hover:scale-[1.03]">
                   <Image
                     src={currentSlide.image}
                     alt={currentSlide.alt}
                     fill
                     priority
-                    sizes="(max-width: 640px) 270px, (max-width: 1024px) 460px, 540px"
+                    sizes="(max-width: 640px) 320px, (max-width: 1024px) 460px, 540px"
                     className="object-contain drop-shadow-[0_20px_35px_rgba(0,0,0,0.38)]"
                   />
                 </div>
