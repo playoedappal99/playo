@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { ProductItem } from "../data/store-data";
 import ProductCard from "./ProductCard";
 import BuyNowModal from "./BuyNowModal";
@@ -24,20 +24,26 @@ export default function FeaturedPicks({
   onToggleWishlist,
   wishlistIds,
 }: FeaturedPicksProps) {
-  // Instant Buy Now Checkout State
   const [buyNowProduct, setBuyNowProduct] = useState<ProductItem | null>(null);
 
-  const filterTabs = [
-    { name: "All", slug: "all" },
-    { name: "Ride-ons", slug: "ride-ons" },
-    { name: "RC Cars", slug: "rc-cars" },
-    { name: "Scooters", slug: "scooters" },
-    { name: "Toys", slug: "toys" },
-  ];
+  // Dynamically compute category filter tabs from DB products
+  const filterTabs = useMemo(() => {
+    const map = new Map<string, string>();
+    map.set("all", "All");
+    products.forEach((p) => {
+      const slug = p.categorySlug || "other";
+      const name = p.category || slug.replace(/-/g, " ");
+      if (!map.has(slug)) {
+        map.set(slug, name.charAt(0).toUpperCase() + name.slice(1));
+      }
+    });
+    return Array.from(map.entries()).map(([slug, name]) => ({ name, slug }));
+  }, [products]);
 
-  const filtered = activeCategory === "all"
-    ? products
-    : products.filter((p) => p.categorySlug === activeCategory);
+  const filtered = useMemo(() => {
+    if (activeCategory === "all") return products;
+    return products.filter((p) => p.categorySlug === activeCategory || p.category === activeCategory);
+  }, [products, activeCategory]);
 
   const handleBuyNow = (prod: ProductItem) => {
     onAddToCart(prod);
@@ -57,7 +63,7 @@ export default function FeaturedPicks({
               Loved by little drivers
             </h2>
             <p className="text-xs sm:text-sm text-gray-500 mt-1 font-medium">
-              Top bestselling picks from our Edappal collection
+              Top bestselling picks from our Edappal showroom collection
             </p>
           </div>
 
@@ -83,29 +89,33 @@ export default function FeaturedPicks({
           </div>
         </div>
 
-        {/* Product Cards Grid: 2 per line on mobile, 4 per line on desktop */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
-          {filtered.map((item) => {
-            const isWishlisted = wishlistIds.includes(item.id);
+        {/* Product Cards Grid */}
+        {filtered.length === 0 ? (
+          <div className="bg-white rounded-3xl p-12 text-center border border-gray-100 shadow-xs">
+            <h3 className="text-base font-bold text-gray-900 mb-1">No products found</h3>
+            <p className="text-xs text-gray-500">No toys available in this category yet.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+            {filtered.map((item) => {
+              const isWishlisted = wishlistIds.includes(item.id);
 
-            return (
-              <ProductCard
-                key={item.id}
-                product={item}
-                isWishlisted={isWishlisted}
-                onToggleWishlist={onToggleWishlist}
-                onAddToCart={onAddToCart}
-                onBuyNow={handleBuyNow}
-              />
-            );
-          })}
-        </div>
+              return (
+                <ProductCard
+                  key={item.id}
+                  product={item}
+                  isWishlisted={isWishlisted}
+                  onToggleWishlist={onToggleWishlist}
+                  onAddToCart={onAddToCart}
+                  onBuyNow={handleBuyNow}
+                />
+              );
+            })}
+          </div>
+        )}
       </div>
 
-      {/* ========================================================
-          INSTANT BUY NOW CHECKOUT MODAL
-          Directly places the order when customer clicks "Buy Now"
-         ======================================================== */}
+      {/* Buy Now Checkout Modal */}
       {buyNowProduct && (
         <BuyNowModal
           product={buyNowProduct}

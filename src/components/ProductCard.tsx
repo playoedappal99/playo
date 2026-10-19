@@ -10,6 +10,7 @@ import {
   Eye
 } from "lucide-react";
 import { ProductItem } from "@/data/store-data";
+import { getOptimizedImageUrl } from "@/lib/image-utils";
 
 interface ProductCardProps {
   product: ProductItem;
@@ -70,9 +71,10 @@ export default function ProductCard({
           >
             <div className="relative w-full h-full">
               <Image
-                src={product.imageUrl}
+                src={getOptimizedImageUrl(product.imageUrl, { width: 500 })}
                 alt={product.name}
                 fill
+                unoptimized
                 sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 33vw"
                 className="object-contain object-center group-hover:scale-105 transition-transform duration-500 ease-out"
               />
@@ -197,9 +199,10 @@ export default function ProductCard({
           {/* Product Image */}
           <div className="relative w-full h-full">
             <Image
-              src={product.imageUrl}
+              src={getOptimizedImageUrl(product.imageUrl, { width: 500 })}
               alt={product.name}
               fill
+              unoptimized
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
               className="object-contain object-center group-hover:scale-106 transition-transform duration-500 ease-out"
             />

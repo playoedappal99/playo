@@ -1,15 +1,34 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Phone, Mail, MapPin, Heart, ShieldCheck } from "lucide-react";
 
 export default function Footer({
   onSelectCategory,
+  categories: initialCategories,
 }: {
   onSelectCategory?: (categorySlug: string) => void;
+  categories?: { id?: string; _id?: string; name: string; slug: string }[];
 }) {
+  const [categories, setCategories] = useState<{ id?: string; _id?: string; name: string; slug: string }[]>(initialCategories || []);
+
+  useEffect(() => {
+    if (initialCategories && initialCategories.length > 0) {
+      setCategories(initialCategories);
+      return;
+    }
+    fetch("/api/categories")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && Array.isArray(data.categories)) {
+          setCategories(data.categories);
+        }
+      })
+      .catch((err) => console.error("Error fetching categories for footer:", err));
+  }, [initialCategories]);
+
   const handleCatClick = (slug: string, e: React.MouseEvent) => {
     if (onSelectCategory) {
       e.preventDefault();
@@ -92,69 +111,28 @@ export default function Footer({
               Shop by Category
             </h4>
             <ul className="space-y-2.5 text-xs text-gray-300">
-              <li>
-                <Link
-                  href="/catalog?category=ride-ons"
-                  onClick={(e) => handleCatClick("ride-ons", e)}
-                  className="hover:text-[#FF9800] transition-colors"
-                >
-                  Electric Ride-ons & 4x4 Jeeps
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/catalog?category=mini-bikes"
-                  onClick={(e) => handleCatClick("mini-bikes", e)}
-                  className="hover:text-[#FF9800] transition-colors"
-                >
-                  Kids&apos; Mini Bikes & Balance Cycles
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/catalog?category=scooters"
-                  onClick={(e) => handleCatClick("scooters", e)}
-                  className="hover:text-[#FF9800] transition-colors"
-                >
-                  Small Scooters with LED Wheels
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/catalog?category=rc-cars"
-                  onClick={(e) => handleCatClick("rc-cars", e)}
-                  className="hover:text-[#FF9800] transition-colors"
-                >
-                  High-Speed RC Drift Cars
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/catalog?category=diecast"
-                  onClick={(e) => handleCatClick("diecast", e)}
-                  className="hover:text-[#FF9800] transition-colors"
-                >
-                  Diecast Model Supercars (1:18)
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/catalog?category=soft-toys"
-                  onClick={(e) => handleCatClick("soft-toys", e)}
-                  className="hover:text-[#FF9800] transition-colors"
-                >
-                  Cuddly Soft Plush Teddy Bears
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/catalog?category=learning"
-                  onClick={(e) => handleCatClick("learning", e)}
-                  className="hover:text-[#FF9800] transition-colors"
-                >
-                  Creative & STEM Learning Toys
-                </Link>
-              </li>
+              {categories.length > 0 ? (
+                categories.slice(0, 8).map((cat) => (
+                  <li key={cat.id || cat._id || cat.slug}>
+                    <Link
+                      href={`/catalog?category=${cat.slug}`}
+                      onClick={(e) => handleCatClick(cat.slug, e)}
+                      className="hover:text-[#FF9800] transition-colors"
+                    >
+                      {cat.name}
+                    </Link>
+                  </li>
+                ))
+              ) : (
+                <li>
+                  <Link
+                    href="/catalog"
+                    className="hover:text-[#FF9800] transition-colors"
+                  >
+                    View All Categories
+                  </Link>
+                </li>
+              )}
             </ul>
           </div>
 

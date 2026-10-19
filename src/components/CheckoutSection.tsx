@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -12,8 +12,10 @@ import {
   Phone,
   ArrowRight,
   Sparkles,
+  Tag,
 } from "lucide-react";
 import { ProductItem } from "@/data/store-data";
+import { useCart } from "@/data/cart-store";
 
 export interface CheckoutSectionProps {
   product?: ProductItem | null;
@@ -66,24 +68,48 @@ export default function CheckoutSection({
   isModal = true,
 }: CheckoutSectionProps) {
   const router = useRouter();
+  const { cartItems, clearCart } = useCart();
 
-  // Fallback to exact Porsche Drift RC item if none provided
-  const product = customProduct || {
-    id: "prod-porsche-rc",
-    name: "PORSCHE DRIFT RC",
-    categorySlug: "rc-cars",
-    category: "RC Cars",
-    scale: "1:24",
-    price: 1990,
-    originalPrice: 2990,
-    discount: "33% OFF",
-    rating: 5,
-    reviewsCount: 128,
-    imageUrl: "/images/catalog/porsche-drift-rc.jpg",
-    color: "VIOLET",
-    tag: "Bestseller",
-    inStock: true,
-  };
+  // Determine items to checkout: if customProduct is passed use it, otherwise use all cart items
+  const checkoutItems = useMemo(() => {
+    if (customProduct) {
+      return [
+        {
+          id: customProduct.id,
+          name: customProduct.name,
+          category: customProduct.category || customProduct.categorySlug,
+          imageUrl: customProduct.imageUrl || "/images/catalog/porsche-drift-rc.jpg",
+          price: customProduct.price || 0,
+          quantity: 1,
+          specs: customProduct.scale ? `Scale: ${customProduct.scale}` : "Standard",
+        },
+      ];
+    }
+    if (cartItems.length > 0) {
+      return cartItems.map((ci) => ({
+        id: ci.product.id,
+        name: ci.product.name,
+        category: ci.product.category || ci.product.categorySlug,
+        imageUrl: ci.product.imageUrl || "/images/catalog/porsche-drift-rc.jpg",
+        price: ci.product.price || 0,
+        quantity: ci.quantity || 1,
+        specs: ci.product.scale ? `Scale: ${ci.product.scale}` : "Standard",
+      }));
+    }
+    return [
+      {
+        id: "prod-porsche-rc",
+        name: "PORSCHE DRIFT RC",
+        category: "RC Cars",
+        imageUrl: "/images/catalog/porsche-drift-rc.jpg",
+        price: 1990,
+        quantity: 1,
+        specs: "Scale: 1:24 • Color: VIOLET",
+      },
+    ];
+  }, [customProduct, cartItems]);
+
+  const product = checkoutItems[0];
 
   // Form states
   const [fullName, setFullName] = useState("");
@@ -103,19 +129,47 @@ export default function CheckoutSection({
   // Order summary expansion toggle
   const [isSummaryExpanded, setIsSummaryExpanded] = useState(true);
 
+  // Active offers from database
+  const [activeOffer, setActiveOffer] = useState<{ minAmount: number; discountPercentage: number } | null>(null);
+
+  useEffect(() => {
+    fetch("/api/offers")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && Array.isArray(data.offers)) {
+          const active = data.offers.filter((o: any) => o.status === "Active");
+          if (active.length > 0) {
+            active.sort((a: any, b: any) => b.discountPercentage - a.discountPercentage);
+            setActiveOffer(active[0]);
+          }
+        }
+      })
+      .catch((err) => console.error("Error loading offers:", err));
+  }, []);
+
   // Razorpay payment simulation states
   const [isProcessing, setIsProcessing] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
   const [placedOrderId, setPlacedOrderId] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
 
-  const quantity = 1;
-  const scale = product.scale || "1:24";
-  const color = "VIOLET";
-  const itemPrice = product.price || 1990;
-  const totalAmount = itemPrice * quantity;
+  const subtotal = useMemo(() => {
+    return checkoutItems.reduce((sum, it) => sum + it.price * it.quantity, 0);
+  }, [checkoutItems]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const discountAmount = useMemo(() => {
+    if (activeOffer && subtotal >= activeOffer.minAmount) {
+      return Math.round((subtotal * activeOffer.discountPercentage) / 100);
+    }
+    return 0;
+  }, [activeOffer, subtotal]);
+
+  const totalAmount = Math.max(0, subtotal - discountAmount);
+  const totalItemCount = useMemo(() => {
+    return checkoutItems.reduce((sum, it) => sum + it.quantity, 0);
+  }, [checkoutItems]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg("");
 
@@ -153,77 +207,61 @@ export default function CheckoutSection({
       return;
     }
 
-    // Trigger Razorpay payment gateway simulation
     setIsProcessing(true);
 
-    setTimeout(() => {
-      const newOrderId = `PLY-RZP-${Date.now().toString().slice(-6)}`;
-      setPlacedOrderId(newOrderId);
+    try {
+      const fullAddress = `${houseNo.trim()}, ${roadName.trim()}${
+        landmark.trim() ? `, Near ${landmark.trim()}` : ""
+      }, ${city.trim()}, ${state.trim()} - ${pinCode.trim()}`;
 
-      // Save order in localStorage so it reflects in My Orders page
-      try {
-        const existingOrders = JSON.parse(
-          localStorage.getItem("playo_orders") || "[]"
-        );
-        const orderData = {
-          id: newOrderId,
-          orderDate: new Date().toLocaleDateString("en-IN", {
-            day: "numeric",
-            month: "short",
-            year: "numeric",
-          }),
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           customerName: fullName.trim(),
           phone: mobileNumber.trim(),
           email: emailAddress.trim(),
-          deliveryAddress: `${houseNo.trim()}, ${roadName.trim()}${
-            landmark.trim() ? `, Near ${landmark.trim()}` : ""
-          }, ${city.trim()}, ${state.trim()} - ${pinCode.trim()}`,
-          shippingPartner:
+          deliveryAddress: fullAddress,
+          shippingOption:
             shippingOption === "indian_post"
               ? "Indian Post (Door-to-Door Delivery)"
               : "Speed & Safe Courier Service",
           deliveryInstructions: deliveryInstructions.trim(),
-          status: "Order Confirmed",
-          estimatedDelivery:
-            shippingOption === "indian_post"
-              ? "3-5 Business Days"
-              : "2-3 Business Days",
-          courier:
-            shippingOption === "indian_post"
-              ? "India Post Parcel Express"
-              : "Speed & Safe Courier Ltd",
-          trackingNumber:
-            shippingOption === "indian_post"
-              ? `IP${Date.now().toString().slice(-9)}IN`
-              : `SSC${Date.now().toString().slice(-8)}`,
-          paymentMethod: "Razorpay (UPI / Card / NetBanking)",
-          paymentStatus: "Paid",
-          totalAmount: totalAmount,
-          items: [
-            {
-              name: product.name,
-              qty: quantity,
-              scale: scale,
-              color: color,
-              price: itemPrice,
-              image: product.imageUrl,
-            },
-          ],
-        };
-        existingOrders.unshift(orderData);
-        localStorage.setItem("playo_orders", JSON.stringify(existingOrders));
-      } catch (err) {
-        console.error("Error saving order:", err);
+          paymentMethod: "Razorpay (UPI / NetBanking)",
+          items: checkoutItems.map((it) => ({
+            id: it.id,
+            name: it.name,
+            category: it.category,
+            imageUrl: it.imageUrl,
+            price: it.price,
+            quantity: it.quantity,
+            specs: it.specs,
+          })),
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        setErrorMsg(data.error || "Failed to process order. Please try again.");
+        setIsProcessing(false);
+        return;
       }
 
+      setPlacedOrderId(data.order.id);
       setIsProcessing(false);
       setOrderSuccess(true);
-    }, 1200);
+      clearCart();
+    } catch (err: any) {
+      console.error("Order submit error:", err);
+      setErrorMsg(err.message || "Network error. Please try again.");
+      setIsProcessing(false);
+    }
   };
 
   const handleTrackInOrders = () => {
     if (onClose) onClose();
-    router.push("/my-orders");
+    router.push(`/my-orders?id=${placedOrderId}`);
   };
 
   return (
@@ -234,9 +272,7 @@ export default function CheckoutSection({
           : "max-w-xl mx-auto rounded-3xl shadow-lg border border-gray-100"
       }`}
     >
-      {/* ========================================================
-          1. HEADER: Checkout (1 Item) + Close button (×)
-         ======================================================== */}
+      {/* 1. HEADER */}
       <div className="px-5 sm:px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-white shrink-0 sticky top-0 z-10">
         <div className="flex items-center gap-2.5">
           <h2 className="text-base sm:text-lg font-bold text-gray-900 tracking-tight">
@@ -261,9 +297,7 @@ export default function CheckoutSection({
 
       <div className="overflow-y-auto flex-1 p-4 sm:p-6 space-y-5">
         {orderSuccess ? (
-          /* ========================================================
-             ORDER SUCCESS CONFIRMATION
-             ======================================================== */
+          /* ORDER SUCCESS CONFIRMATION */
           <div className="py-6 px-2 text-center space-y-5 animate-in fade-in duration-300">
             <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto ring-8 ring-emerald-50/60 shadow-sm">
               <CheckCircle2 className="w-9 h-9" />
@@ -297,14 +331,18 @@ export default function CheckoutSection({
                     alt={product.name}
                     fill
                     className="object-contain"
+                    sizes="56px"
+                    unoptimized
                   />
                 </div>
                 <div className="flex-1 min-w-0">
                   <h4 className="text-xs font-bold text-gray-900 truncate">
-                    {product.name}
+                    {checkoutItems.length > 1
+                      ? `${product.name} + ${checkoutItems.length - 1} more item(s)`
+                      : product.name}
                   </h4>
                   <p className="text-[11px] text-gray-500">
-                    Qty: {quantity} • Scale: {scale} • Color: {color}
+                    Total Items: {totalItemCount}
                   </p>
                   <p className="text-xs font-extrabold text-gray-900 mt-0.5">
                     ₹{totalAmount.toLocaleString("en-IN")}
@@ -363,9 +401,7 @@ export default function CheckoutSection({
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* ========================================================
-                2. ORDER SUMMARY (1 item)
-               ======================================================== */}
+            {/* 2. ORDER SUMMARY */}
             <div className="rounded-2xl border border-gray-200/90 bg-gray-50/70 overflow-hidden transition-all">
               <button
                 type="button"
@@ -389,30 +425,43 @@ export default function CheckoutSection({
 
               {isSummaryExpanded && (
                 <div className="px-4 pb-4 pt-1 border-t border-gray-200/70 bg-white space-y-3">
-                  <div className="flex items-start gap-3.5 pt-2">
-                    <div className="relative w-16 h-16 rounded-xl bg-gray-50 border border-gray-200/80 overflow-hidden shrink-0 p-1 flex items-center justify-center">
-                      <Image
-                        src={product.imageUrl}
-                        alt={product.name}
-                        fill
-                        className="object-contain p-1"
-                      />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-xs sm:text-sm font-extrabold text-gray-900 tracking-tight uppercase">
-                        {product.name}
-                      </h3>
-                      <p className="text-[11px] font-semibold text-gray-500 uppercase mt-0.5">
-                        {product.name}
-                      </p>
-                      <p className="text-[11px] font-medium text-gray-600 mt-0.5">
-                        Qty: {quantity} • Scale: {scale} • Color: {color}
-                      </p>
-                      <p className="text-xs sm:text-sm font-bold text-gray-900 mt-1">
-                        ₹{itemPrice.toLocaleString("en-IN")}
-                      </p>
-                    </div>
+                  <div className="space-y-3 divide-y divide-gray-100 max-h-64 overflow-y-auto pr-1">
+                    {checkoutItems.map((item, idx) => (
+                      <div key={item.id + idx} className="flex items-start gap-3.5 pt-2">
+                        <div className="relative w-14 h-14 rounded-xl bg-gray-50 border border-gray-200/80 overflow-hidden shrink-0 p-1 flex items-center justify-center">
+                          <Image
+                            src={item.imageUrl}
+                            alt={item.name}
+                            fill
+                            className="object-contain p-0.5"
+                            sizes="56px"
+                            unoptimized
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-xs sm:text-sm font-extrabold text-gray-900 tracking-tight uppercase truncate">
+                            {item.name}
+                          </h3>
+                          <p className="text-[11px] font-medium text-gray-600 mt-0.5">
+                            Qty: {item.quantity} • {item.specs}
+                          </p>
+                          <p className="text-xs sm:text-sm font-bold text-gray-900 mt-0.5">
+                            ₹{(item.price * item.quantity).toLocaleString("en-IN")}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
                   </div>
+
+                  {discountAmount > 0 && (
+                    <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-xs text-emerald-600 font-bold">
+                      <span className="flex items-center gap-1">
+                        <Tag className="w-3 h-3" />
+                        <span>Special Offer Discount ({activeOffer?.discountPercentage}%)</span>
+                      </span>
+                      <span>-₹{discountAmount.toLocaleString("en-IN")}</span>
+                    </div>
+                  )}
 
                   <div className="pt-2.5 border-t border-gray-100 flex items-center justify-between text-xs sm:text-sm font-extrabold text-gray-900">
                     <span>Total Amount</span>
@@ -431,11 +480,8 @@ export default function CheckoutSection({
               </div>
             )}
 
-            {/* ========================================================
-                3. CONTACT & ADDRESS FIELDS
-               ======================================================== */}
+            {/* 3. CONTACT & ADDRESS FIELDS */}
             <div className="space-y-3.5">
-              {/* Full Name * */}
               <div>
                 <label className="block text-xs font-bold text-gray-800 mb-1">
                   Full Name <span className="text-red-500">*</span>
@@ -450,7 +496,6 @@ export default function CheckoutSection({
                 />
               </div>
 
-              {/* Mobile Number * */}
               <div>
                 <label className="block text-xs font-bold text-gray-800 mb-1">
                   Mobile Number <span className="text-red-500">*</span>
@@ -466,7 +511,6 @@ export default function CheckoutSection({
                 />
               </div>
 
-              {/* Email Address * */}
               <div>
                 <label className="block text-xs font-bold text-gray-800 mb-1">
                   Email Address <span className="text-red-500">*</span>
@@ -481,7 +525,6 @@ export default function CheckoutSection({
                 />
               </div>
 
-              {/* House No. / Building Name * */}
               <div>
                 <label className="block text-xs font-bold text-gray-800 mb-1">
                   House No. / Building Name <span className="text-red-500">*</span>
@@ -496,7 +539,6 @@ export default function CheckoutSection({
                 />
               </div>
 
-              {/* Road Name / Area / Colony * */}
               <div>
                 <label className="block text-xs font-bold text-gray-800 mb-1">
                   Road Name / Area / Colony <span className="text-red-500">*</span>
@@ -511,7 +553,6 @@ export default function CheckoutSection({
                 />
               </div>
 
-              {/* Landmark (Optional) */}
               <div>
                 <label className="block text-xs font-bold text-gray-800 mb-1">
                   Landmark (Optional)
@@ -525,7 +566,6 @@ export default function CheckoutSection({
                 />
               </div>
 
-              {/* PIN Code * and City * row */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-gray-800 mb-1">
@@ -557,7 +597,6 @@ export default function CheckoutSection({
                 </div>
               </div>
 
-              {/* State * */}
               <div>
                 <label className="block text-xs font-bold text-gray-800 mb-1">
                   State <span className="text-red-500">*</span>
@@ -583,9 +622,7 @@ export default function CheckoutSection({
               </div>
             </div>
 
-            {/* ========================================================
-                4. SHIPPING OPTIONS & DELIVERY PARTNERS *
-               ======================================================== */}
+            {/* 4. SHIPPING OPTIONS */}
             <div className="space-y-2 pt-1">
               <label className="block text-xs font-bold text-gray-900">
                 Shipping Options & Delivery Partners{" "}
@@ -593,7 +630,6 @@ export default function CheckoutSection({
               </label>
 
               <div className="space-y-2">
-                {/* Option 1: Indian Post */}
                 <label
                   onClick={() => setShippingOption("indian_post")}
                   className={`flex items-start gap-3 p-3.5 rounded-2xl border transition-all cursor-pointer ${
@@ -620,7 +656,6 @@ export default function CheckoutSection({
                   </div>
                 </label>
 
-                {/* Option 2: Speed & Safe Courier Service */}
                 <label
                   onClick={() => setShippingOption("speed_and_safe")}
                   className={`flex items-start gap-3 p-3.5 rounded-2xl border transition-all cursor-pointer ${
@@ -648,9 +683,7 @@ export default function CheckoutSection({
               </div>
             </div>
 
-            {/* ========================================================
-                5. DELIVERY INSTRUCTIONS (OPTIONAL)
-               ======================================================== */}
+            {/* 5. DELIVERY INSTRUCTIONS */}
             <div>
               <label className="block text-xs font-bold text-gray-800 mb-1">
                 Delivery Instructions (Optional)
@@ -664,13 +697,9 @@ export default function CheckoutSection({
               />
             </div>
 
-            {/* ========================================================
-                6. PAYMENT VIA RAZORPAY SECURE GATEWAY
-                   (Exact match with second attached image)
-               ======================================================== */}
+            {/* 6. PAYMENT VIA RAZORPAY */}
             <div className="pt-1">
               <div className="p-3.5 sm:p-4 rounded-xl border border-sky-200/90 bg-[#F0F8FF] flex items-center gap-3.5 shadow-2xs">
-                {/* Credit Card Icon matching the second attached image */}
                 <div className="shrink-0 flex items-center justify-center">
                   <svg
                     className="w-8 h-6 sm:w-9 sm:h-6.5 drop-shadow-xs"
@@ -678,13 +707,9 @@ export default function CheckoutSection({
                     fill="none"
                     xmlns="http://www.w3.org/2000/svg"
                   >
-                    {/* Card Body */}
                     <rect width="36" height="26" rx="4" fill="#38BDF8" />
-                    {/* Magnetic Stripe */}
                     <rect y="4.5" width="36" height="5" fill="#0F172A" />
-                    {/* Yellow Chip */}
                     <rect x="25" y="16" width="6.5" height="5" rx="1" fill="#FACC15" />
-                    {/* Subtle details */}
                     <rect x="4" y="17.5" width="8" height="2" rx="0.5" fill="#BAE6FD" opacity="0.8" />
                   </svg>
                 </div>
@@ -699,7 +724,6 @@ export default function CheckoutSection({
                 </div>
               </div>
 
-              {/* Submit / Pay Button (Light blue color) */}
               <button
                 type="submit"
                 disabled={isProcessing}
@@ -708,7 +732,7 @@ export default function CheckoutSection({
                 {isProcessing ? (
                   <>
                     <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                    <span>Connecting to Razorpay Gateway...</span>
+                    <span>Verifying stock & connecting to Razorpay...</span>
                   </>
                 ) : (
                   <>

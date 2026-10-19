@@ -59,133 +59,6 @@ export interface OrderDetail {
   cancelReason?: string;
 }
 
-// 4 default orders demonstrating each of the 4 requested statuses
-const INITIAL_DEMO_ORDERS: Record<string, OrderDetail> = {
-  "PLY-91820": {
-    id: "PLY-91820",
-    orderDate: "18 Oct 2026",
-    customerName: "Arun Varma",
-    phone: "+91 98471 23456",
-    deliveryAddress: "Near Municipal Bus Stand, Main Road, Edappal, Malappuram - 679576",
-    status: "Pending",
-    estimatedDelivery: "2-3 Business Days",
-    courier: "Playo Local Fleet",
-    trackingNumber: "PL-EDP-91820P",
-    carrierLocation: "Order received - awaiting store verification",
-    paymentMethod: "Cash on Delivery",
-    items: [
-      {
-        id: "prod-jeep-4x4",
-        name: "Kids 4x4 Off-Road Electric Jeep",
-        category: "Ride-ons",
-        imageUrl: "/images/carousel/kids-jeep.png",
-        price: 6499,
-        quantity: 1,
-        specs: "12V Dual Motor | Red Edition | Remote Control & MP3",
-      },
-    ],
-    subtotal: 7499,
-    discount: 1000,
-    deliveryFee: 0,
-    total: 6499,
-  },
-  "PLY-84920": {
-    id: "PLY-84920",
-    orderDate: "16 Oct 2026",
-    customerName: "Faheem Rahman",
-    phone: "+91 94470 55432",
-    deliveryAddress: "Kuttippuram Road, Near Town Square, Edappal - 679576",
-    status: "Confirmed",
-    estimatedDelivery: "Tomorrow by 4:00 PM",
-    courier: "BlueDart Express",
-    trackingNumber: "BD-EDP-84920X",
-    carrierLocation: "Packed & verified at Edappal Distribution Center",
-    paymentMethod: "UPI Prepaid (GPay)",
-    items: [
-      {
-        id: "prod-porsche-rc",
-        name: "PORSCHE DRIFT RC",
-        category: "RC Cars",
-        imageUrl: "/images/catalog/porsche-drift-rc.jpg",
-        price: 1990,
-        quantity: 1,
-        specs: "Scale: 1:24 | Black Edition | Remote & Gift Box",
-      },
-    ],
-    subtotal: 2990,
-    discount: 1000,
-    deliveryFee: 0,
-    total: 1990,
-  },
-  "PLY-61402": {
-    id: "PLY-61402",
-    orderDate: "13 Oct 2026",
-    customerName: "Reshma Mohammed",
-    phone: "+91 94470 87654",
-    deliveryAddress: "Kallarmangalam Road, Near Town Masjid, Edappal - 679576",
-    status: "Delivered",
-    estimatedDelivery: "Delivered on 15 Oct 2026",
-    courier: "Delhivery Surface",
-    trackingNumber: "DLV-90827361",
-    carrierLocation: "Delivered to customer & signed",
-    paymentMethod: "UPI Prepaid",
-    items: [
-      {
-        id: "prod-cca-mclaren",
-        name: "Metal CCA McLaren 765LT Diecast Model",
-        category: "Diecast Cars",
-        imageUrl: "/images/catalog/cca-mclaren-box.jpg",
-        price: 2699,
-        quantity: 1,
-        specs: "Scale: 1:24 | Papaya Orange | Acrylic Window Box",
-      },
-      {
-        id: "prod-plush-bear",
-        name: "Ultra Cuddle Plush Teddy Bear (Large)",
-        category: "Soft Toys",
-        imageUrl: "/images/carousel/kids-teddy.png",
-        price: 1299,
-        quantity: 1,
-        specs: "Pink Edition | Soft Microfiber",
-      },
-    ],
-    subtotal: 5798,
-    discount: 1800,
-    deliveryFee: 0,
-    total: 3998,
-  },
-  "PLY-30192": {
-    id: "PLY-30192",
-    orderDate: "10 Oct 2026",
-    customerName: "Vinod Kumar",
-    phone: "+91 97455 11223",
-    deliveryAddress: "Main Bazaar, Edappal - 679576",
-    status: "Cancelled",
-    estimatedDelivery: "Cancelled on 10 Oct 2026",
-    courier: "Playo Local Fleet",
-    trackingNumber: "PL-CAN-30192",
-    carrierLocation: "Order cancelled by customer",
-    paymentMethod: "Cash on Delivery",
-    cancelReason: "Cancelled upon customer request (placed duplicate order)",
-    items: [
-      {
-        id: "prod-scooter-glow",
-        name: "Glow Rider 3-Wheel LED Kick Scooter",
-        category: "Scooters",
-        imageUrl: "/images/carousel/kids-scooter.png",
-        price: 1899,
-        quantity: 1,
-        specs: "Color: Blue | Kinetic Light-Up Wheels",
-      },
-    ],
-    subtotal: 2999,
-    discount: 1100,
-    deliveryFee: 0,
-    total: 1899,
-  },
-};
-
-// Normalize unknown or old status strings to the 4 valid ones
 function normalizeStatus(statusStr: string): OrderStatus {
   const s = (statusStr || "").toLowerCase().trim();
   if (s.includes("cancel")) return "Cancelled";
@@ -194,10 +67,9 @@ function normalizeStatus(statusStr: string): OrderStatus {
   return "Pending";
 }
 
-// 3-step linear flow for active orders
 const TRACKING_STEPS: { key: OrderStatus; title: string; desc: string }[] = [
-  { key: "Pending", title: "Pending", desc: "Awaiting confirmation" },
-  { key: "Confirmed", title: "Confirmed", desc: "Verified & packed" },
+  { key: "Pending", title: "Pending", desc: "Awaiting store confirmation" },
+  { key: "Confirmed", title: "Confirmed", desc: "Verified & packed in showroom" },
   { key: "Delivered", title: "Delivered", desc: "Delivered to doorstep" },
 ];
 
@@ -245,8 +117,11 @@ function MyOrdersContent() {
   const searchParams = useSearchParams();
   const urlOrderId = searchParams.get("id");
 
-  const [ordersMap, setOrdersMap] = useState<Record<string, OrderDetail>>(INITIAL_DEMO_ORDERS);
+  const [orders, setOrders] = useState<OrderDetail[]>([]);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(Boolean(urlOrderId));
+  const [trackInput, setTrackInput] = useState<string>("");
+  const [trackError, setTrackError] = useState<string>("");
 
   const {
     cartItems,
@@ -258,83 +133,95 @@ function MyOrdersContent() {
     totalCartCount,
   } = useCart();
 
-  // Load orders from localStorage and merge with demo orders
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem("playo_orders");
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          const merged = { ...INITIAL_DEMO_ORDERS };
-          parsed.forEach((raw: any) => {
-            if (!raw || !raw.id) return;
-            const validStatus = normalizeStatus(raw.status);
-            const items: OrderItem[] = Array.isArray(raw.items)
-              ? raw.items.map((it: any, idx: number) => ({
-                  id: it.id || `item-${idx}`,
-                  name: it.name || "Playo Toy",
-                  category: it.category || "Toy Item",
-                  imageUrl: it.image || it.imageUrl || "/images/carousel/kids-jeep.png",
-                  price: Number(it.price) || 0,
-                  quantity: Number(it.qty || it.quantity) || 1,
-                  specs: it.specs || "Standard Edition",
-                }))
-              : [];
+  const mapRawOrder = (raw: any): OrderDetail => ({
+    id: raw.id,
+    orderDate: raw.orderDate || "Recently",
+    customerName: raw.customerName || "Customer",
+    phone: raw.phone || "",
+    deliveryAddress: raw.deliveryAddress || "Edappal, Malappuram",
+    status: normalizeStatus(raw.status),
+    estimatedDelivery: raw.estimatedDelivery || "2-3 Business Days",
+    courier: raw.courier || "India Post Doorstep Express",
+    trackingNumber: raw.trackingNumber || `TRK-${raw.id}`,
+    carrierLocation: raw.carrierLocation || "Edappal Fulfillment Hub",
+    paymentMethod: raw.paymentMethod || "Razorpay (UPI / NetBanking)",
+    items: Array.isArray(raw.items)
+      ? raw.items.map((it: any, i: number) => ({
+          id: it.id || `it-${i}`,
+          name: it.name || "Playo Toy",
+          category: it.category || "General",
+          imageUrl: it.imageUrl || it.image || "/images/catalog/porsche-drift-rc.jpg",
+          price: Number(it.price) || 0,
+          quantity: Number(it.quantity || it.qty) || 1,
+          specs: it.specs || "Standard",
+        }))
+      : [],
+    subtotal: Number(raw.subtotal) || Number(raw.total) || 0,
+    deliveryFee: Number(raw.deliveryFee) || 0,
+    discount: Number(raw.discount) || 0,
+    total: Number(raw.total) || 0,
+    cancelReason: raw.cancelReason,
+  });
 
-            const total = Number(raw.totalAmount || raw.total) || 0;
-            merged[raw.id] = {
-              id: raw.id,
-              orderDate: raw.orderDate || "Recently",
-              customerName: raw.customerName || "Customer",
-              phone: raw.phone || "",
-              deliveryAddress: raw.deliveryAddress || "Edappal, Malappuram",
-              status: validStatus,
-              estimatedDelivery: raw.estimatedDelivery || "2-3 Business Days",
-              courier: raw.courier || "Playo Express Delivery",
-              trackingNumber: raw.trackingNumber || `TRK-${raw.id}`,
-              carrierLocation: raw.carrierLocation || "Edappal Fulfillment Hub",
-              paymentMethod: raw.paymentMethod || "Cash on Delivery",
-              items: items.length > 0 ? items : [
-                {
-                  id: "item-def",
-                  name: "Toy Product",
-                  category: "Playo Toy",
-                  imageUrl: "/images/carousel/kids-jeep.png",
-                  price: total,
-                  quantity: 1,
-                }
-              ],
-              subtotal: total,
-              deliveryFee: 0,
-              discount: 0,
-              total: total,
-              cancelReason: raw.cancelReason,
-            };
-          });
-          setOrdersMap(merged);
+  // Load orders directly from MongoDB database API
+  useEffect(() => {
+    async function loadOrders() {
+      setIsLoading(true);
+      try {
+        const queryParam = urlOrderId ? `?id=${encodeURIComponent(urlOrderId)}` : "";
+        const res = await fetch(`/api/orders${queryParam}`, { cache: "no-store" });
+        const data = await res.json();
+        if (data.success && Array.isArray(data.orders)) {
+          const mapped = data.orders.map(mapRawOrder);
+          setOrders(mapped);
+          if (urlOrderId) {
+            const found = mapped.find((o) => o.id === urlOrderId);
+            if (found) setSelectedOrderId(urlOrderId);
+          }
         }
+      } catch (err) {
+        console.error("Error fetching orders:", err);
+      } finally {
+        setIsLoading(false);
       }
-    } catch {
-      // safe fallback
     }
-  }, []);
 
-  // Set initial selected order if url param is present
-  useEffect(() => {
-    if (urlOrderId && ordersMap[urlOrderId]) {
-      setSelectedOrderId(urlOrderId);
+    loadOrders();
+  }, [urlOrderId]);
+
+  const handleTrackSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!trackInput.trim()) return;
+    setTrackError("");
+    setIsLoading(true);
+    try {
+      const q = trackInput.trim();
+      const isPhone = /^\d{10}$/.test(q.replace(/\D/g, ""));
+      const endpoint = isPhone
+        ? `/api/orders?phone=${encodeURIComponent(q.replace(/\D/g, ""))}`
+        : `/api/orders?id=${encodeURIComponent(q)}`;
+
+      const res = await fetch(endpoint, { cache: "no-store" });
+      const data = await res.json();
+      if (data.success && Array.isArray(data.orders) && data.orders.length > 0) {
+        const mapped = data.orders.map(mapRawOrder);
+        setOrders(mapped);
+        if (mapped.length === 1) {
+          setSelectedOrderId(mapped[0].id);
+        }
+      } else {
+        setTrackError(`No order found matching "${q}". Please verify the Order ID or 10-digit mobile number.`);
+      }
+    } catch (err: any) {
+      setTrackError(err.message || "Failed to search order");
+    } finally {
+      setIsLoading(false);
     }
-  }, [urlOrderId, ordersMap]);
+  };
 
-  // Orders list array
-  const allOrdersList = useMemo(() => {
-    return Object.values(ordersMap);
-  }, [ordersMap]);
-
-  // Current selected order for detail view
-  const currentOrder = selectedOrderId ? ordersMap[selectedOrderId] : null;
-
-
+  const currentOrder = useMemo(() => {
+    return selectedOrderId ? orders.find((o) => o.id === selectedOrderId) : null;
+  }, [selectedOrderId, orders]);
 
   return (
     <div className="min-h-screen bg-[#fafbfc] text-gray-900 flex flex-col font-sans selection:bg-[#FF9800] selection:text-white">
@@ -370,24 +257,49 @@ function MyOrdersContent() {
           )}
         </nav>
 
-        {/* ------------------------------------------------------------- */}
-        {/* VIEW 1: LIST OF ALL ORDERED ITEMS (First View)                */}
-        {/* ------------------------------------------------------------- */}
+        {/* VIEW 1: LIST OF ALL ORDERED ITEMS */}
         {!selectedOrderId && (
           <div className="space-y-6">
-            {/* Page Title & Intro */}
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold text-[#0D1B2A] tracking-tight flex items-center gap-2.5">
                 <Package className="w-7 h-7 text-[#FF9800]" />
                 <span>My Orders</span>
               </h1>
               <p className="text-xs sm:text-sm text-gray-500 mt-1">
-                View all items you ordered and track their live status: Pending, Confirmed, Delivered, or Cancelled.
+                Live orders from showroom database with tracking: Pending, Confirmed, Delivered, or Cancelled.
               </p>
             </div>
 
-            {/* List of Orders Cards */}
-            {allOrdersList.length === 0 ? (
+            {/* Live Order Tracking Lookup Form */}
+            <div className="bg-white rounded-2xl border border-gray-200/90 p-4 shadow-2xs">
+              <form onSubmit={handleTrackSubmit} className="flex flex-col sm:flex-row gap-2.5">
+                <input
+                  type="text"
+                  value={trackInput}
+                  onChange={(e) => setTrackInput(e.target.value)}
+                  placeholder="Enter Order ID (e.g. PLY-123456) or 10-digit Mobile Number"
+                  className="flex-1 px-4 py-2.5 text-xs sm:text-sm rounded-xl border border-gray-300 bg-white placeholder-gray-400 focus:border-[#FF9800] focus:ring-2 focus:ring-orange-100 outline-none transition-all"
+                />
+                <button
+                  type="submit"
+                  className="px-6 py-2.5 bg-[#0D1B2A] hover:bg-black text-white text-xs font-bold rounded-xl shadow-sm transition-all cursor-pointer whitespace-nowrap"
+                >
+                  Track Order
+                </button>
+              </form>
+              {trackError && (
+                <p className="text-xs font-semibold text-rose-600 mt-2">
+                  {trackError}
+                </p>
+              )}
+            </div>
+
+            {isLoading ? (
+              <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
+                <div className="w-8 h-8 border-4 border-sky-600 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+                <p className="text-xs font-bold text-gray-500">Loading your orders from database...</p>
+              </div>
+            ) : orders.length === 0 ? (
               <div className="bg-white rounded-2xl border border-gray-200/90 p-8 text-center space-y-3">
                 <div className="w-14 h-14 rounded-full bg-gray-100 text-gray-400 mx-auto flex items-center justify-center">
                   <Package className="w-7 h-7" />
@@ -407,13 +319,13 @@ function MyOrdersContent() {
               </div>
             ) : (
               <div className="space-y-4">
-                {allOrdersList.map((ord) => (
+                {orders.map((ord) => (
                   <div
                     key={ord.id}
                     onClick={() => setSelectedOrderId(ord.id)}
                     className="bg-white rounded-2xl border border-gray-200/90 p-4 sm:p-5 shadow-2xs hover:shadow-md hover:border-gray-300 transition-all cursor-pointer group"
                   >
-                    {/* Order Header: ID, Date, Status */}
+                    {/* Header */}
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3.5 border-b border-gray-100">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-bold text-gray-900 text-sm sm:text-base group-hover:text-[#FF9800] transition-colors">
@@ -469,7 +381,7 @@ function MyOrdersContent() {
                       ))}
                     </div>
 
-                    {/* Card Footer: Delivery Note & Action CTA */}
+                    {/* Footer */}
                     <div className="pt-3 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
                       <div className="text-gray-500 flex items-center gap-1.5">
                         <MapPin className="w-3.5 h-3.5 text-gray-400 shrink-0" />
@@ -488,9 +400,7 @@ function MyOrdersContent() {
           </div>
         )}
 
-        {/* ------------------------------------------------------------- */}
-        {/* VIEW 2: ORDER DETAILS & TRACKING (Shown after click)           */}
-        {/* ------------------------------------------------------------- */}
+        {/* VIEW 2: ORDER DETAILS & TRACKING */}
         {selectedOrderId && currentOrder && (
           <div className="space-y-6 animate-in fade-in-50 duration-200">
             {/* Back Button */}
@@ -505,9 +415,8 @@ function MyOrdersContent() {
               </button>
             </div>
 
-            {/* Main Status Tracker Card */}
+            {/* Tracker Card */}
             <div className="bg-white rounded-2xl border border-gray-200/90 p-4 sm:p-6 shadow-2xs">
-              {/* Order ID & Status Header */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-5 border-b border-gray-100">
                 <div>
                   <div className="flex items-center gap-2.5 flex-wrap">
@@ -534,7 +443,6 @@ function MyOrdersContent() {
 
               {/* Status Visual Tracker */}
               {currentOrder.status === "Cancelled" ? (
-                /* Cancelled Order Notice */
                 <div className="py-6 sm:py-8">
                   <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 sm:p-5 flex items-start gap-3.5">
                     <div className="w-10 h-10 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
@@ -568,10 +476,8 @@ function MyOrdersContent() {
                   </div>
                 </div>
               ) : (
-                /* 3-Step Clean Tracker (Pending -> Confirmed -> Delivered) */
                 <div className="py-6 sm:py-8">
                   <div className="relative">
-                    {/* Connecting Progress Line */}
                     <div className="hidden sm:block absolute top-4 left-12 right-12 h-1 bg-gray-100 rounded-full z-0">
                       <div
                         className="h-full bg-emerald-500 rounded-full transition-all duration-500"
@@ -581,7 +487,6 @@ function MyOrdersContent() {
                       />
                     </div>
 
-                    {/* Step Points */}
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-2 relative z-10">
                       {TRACKING_STEPS.map((step, idx) => {
                         const currentIdx = getStepIndex(currentOrder.status);
@@ -645,7 +550,7 @@ function MyOrdersContent() {
                 </div>
               )}
 
-              {/* Courier & Carrier Note Strip */}
+              {/* Courier Strip */}
               <div className="bg-gray-50 rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
                 <div className="flex items-center gap-2.5">
                   <div className="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center shrink-0">
@@ -678,9 +583,8 @@ function MyOrdersContent() {
               </div>
             </div>
 
-            {/* Order Items & Cost Details in 2-Column Responsive Grid */}
+            {/* Order Items & Cost Details */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-              {/* Ordered Items List (2 cols on desktop) */}
               <div className="md:col-span-2 bg-white rounded-2xl border border-gray-200/90 p-4 sm:p-5 shadow-2xs">
                 <div className="flex items-center justify-between pb-3 border-b border-gray-100 mb-3">
                   <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider">
@@ -725,7 +629,7 @@ function MyOrdersContent() {
                   ))}
                 </div>
 
-                {/* Delivery Address Information */}
+                {/* Delivery Address */}
                 <div className="mt-5 pt-4 border-t border-gray-100 text-xs">
                   <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">
                     Delivery Address
@@ -738,7 +642,7 @@ function MyOrdersContent() {
                 </div>
               </div>
 
-              {/* Payment Summary (1 col on desktop) */}
+              {/* Payment Summary */}
               <div className="bg-white rounded-2xl border border-gray-200/90 p-4 sm:p-5 shadow-2xs flex flex-col justify-between space-y-4">
                 <div>
                   <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
@@ -776,7 +680,7 @@ function MyOrdersContent() {
                   </div>
                 </div>
 
-                {/* Action Buttons */}
+                {/* Actions */}
                 <div className="space-y-2 pt-2">
                   <button
                     type="button"
@@ -802,6 +706,7 @@ function MyOrdersContent() {
         )}
       </main>
 
+      {/* Cart Drawer */}
       <CartDrawer
         isOpen={isCartOpen}
         onClose={() => setIsCartOpen(false)}
@@ -819,13 +724,11 @@ function MyOrdersContent() {
 
 export default function MyOrdersPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen flex items-center justify-center bg-white">
-          <div className="w-8 h-8 border-4 border-[#FF9800] border-t-transparent rounded-full animate-spin" />
-        </div>
-      }
-    >
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="w-8 h-8 border-4 border-sky-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
       <MyOrdersContent />
     </Suspense>
   );

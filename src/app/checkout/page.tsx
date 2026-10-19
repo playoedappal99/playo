@@ -17,9 +17,8 @@ export default function CheckoutPage() {
     setIsMounted(true);
   }, []);
 
-  // If cart has items, use the first cart item, otherwise default to Porsche Drift RC
-  const checkoutProduct =
-    isMounted && cartItems.length > 0 ? cartItems[0].product : null;
+  // By passing null, CheckoutSection checks out all active items in the database-backed cart
+  const checkoutProduct = null;
 
   return (
     <div className="min-h-screen bg-gray-50/50 text-gray-900 flex flex-col font-sans">

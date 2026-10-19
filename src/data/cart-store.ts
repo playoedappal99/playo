@@ -1,89 +1,140 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { ProductItem } from "@/data/store-data";
 import { CartItem } from "@/components/CartDrawer";
 
-const CART_STORAGE_KEY = "toymall_cart_items_v1";
-const WISHLIST_STORAGE_KEY = "toymall_wishlist_ids_v1";
+const WISHLIST_STORAGE_KEY = "playo_wishlist_ids_db_v1";
 
 export function useCart() {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [wishlistIds, setWishlistIds] = useState<string[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
-  const [isMounted, setIsMounted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Load from localStorage on mount
-  useEffect(() => {
-    setIsMounted(true);
+  // 1. Fetch DB-backed cart on load
+  const refreshCartFromDb = useCallback(async () => {
     try {
-      const savedCart = localStorage.getItem(CART_STORAGE_KEY);
-      if (savedCart) {
-        setCartItems(JSON.parse(savedCart));
+      setIsLoading(true);
+      const res = await fetch("/api/cart", { cache: "no-store" });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && Array.isArray(data.items)) {
+          setCartItems(data.items);
+        }
       }
+    } catch (err) {
+      console.error("Failed to load cart from DB:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshCartFromDb();
+
+    // Load wishlist
+    try {
       const savedWishlist = localStorage.getItem(WISHLIST_STORAGE_KEY);
       if (savedWishlist) {
         setWishlistIds(JSON.parse(savedWishlist));
       }
     } catch {
-      // ignore JSON errors
-    }
-  }, []);
-
-  // Sync to localStorage
-  useEffect(() => {
-    if (!isMounted) return;
-    try {
-      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cartItems));
-    } catch {
       // ignore
     }
-  }, [cartItems, isMounted]);
+  }, [refreshCartFromDb]);
 
+  // Sync wishlist
   useEffect(() => {
-    if (!isMounted) return;
     try {
       localStorage.setItem(WISHLIST_STORAGE_KEY, JSON.stringify(wishlistIds));
     } catch {
       // ignore
     }
-  }, [wishlistIds, isMounted]);
+  }, [wishlistIds]);
 
-  // Listen to open cart drawer event
+  // Open cart drawer event listener
   useEffect(() => {
     const handleOpenCart = () => setIsCartOpen(true);
     window.addEventListener("playo_open_cart", handleOpenCart);
     return () => window.removeEventListener("playo_open_cart", handleOpenCart);
   }, []);
 
-  const addToCart = (product: ProductItem, openDrawer: boolean = false) => {
+  // 2. Add to cart in database
+  const addToCart = async (
+    product: ProductItem,
+    openDrawer: boolean = false,
+    quantityToAdd: number = 1
+  ) => {
+    const availableStock = typeof product.stockCount === "number" ? product.stockCount : 10;
+    if (availableStock <= 0) {
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("playo_cart_toast", {
+            detail: {
+              product,
+              message: `"${product.name}" is currently out of stock.`,
+              isError: true,
+            },
+          })
+        );
+      }
+      return;
+    }
+
+    // Optimistic UI update with real-world quantity bounds
     setCartItems((prev) => {
       const existing = prev.find((item) => item.product.id === product.id);
       if (existing) {
+        const targetQty = Math.min(availableStock, existing.quantity + quantityToAdd);
         return prev.map((item) =>
-          item.product.id === product.id
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
+          item.product.id === product.id ? { ...item, quantity: targetQty } : item
         );
       }
+      const initialQty = Math.min(availableStock, Math.max(1, quantityToAdd));
       return [
         ...prev,
         {
           product: {
             ...product,
-            category: product.categorySlug,
-            discount: product.discount,
-            features: product.features || ["100% Genuine", "Safe for kids", "Tested quality"],
-            specs: product.specs || {},
-            inStock: product.inStock !== false,
-            tag: product.tag || "Bestseller",
+            stockCount: availableStock,
+            inStock: availableStock > 0,
           },
-          quantity: 1,
+          quantity: initialQty,
         },
       ];
     });
 
-    // Trigger toast notification
+    try {
+      const res = await fetch("/api/cart", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productId: product.id, quantity: quantityToAdd }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        // Rollback and notify
+        refreshCartFromDb();
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent("playo_cart_toast", {
+              detail: {
+                product,
+                message: data.error || "Cannot add more than available stock",
+                isError: true,
+              },
+            })
+          );
+        }
+        return;
+      }
+      // Refresh to ensure exact sync
+      refreshCartFromDb();
+    } catch (err) {
+      console.error("Error adding to cart:", err);
+      refreshCartFromDb();
+    }
+
     if (typeof window !== "undefined") {
       window.dispatchEvent(
         new CustomEvent("playo_cart_toast", {
@@ -97,22 +148,77 @@ export function useCart() {
     }
   };
 
-  const updateQuantity = (productId: string, delta: number) => {
+  // 3. Update quantity: Never less than 1, never greater than available stock!
+  const updateQuantity = async (productId: string, delta: number) => {
+    let targetProduct: ProductItem | null = null;
+    let clampedQty = 1;
+
     setCartItems((prev) =>
-      prev
-        .map((item) => {
-          if (item.product.id === productId) {
-            const newQty = item.quantity + delta;
-            return newQty > 0 ? { ...item, quantity: newQty } : null;
+      prev.map((item) => {
+        if (item.product.id === productId) {
+          targetProduct = item.product;
+          const maxStock = typeof item.product.stockCount === "number" ? item.product.stockCount : 999;
+          const calculated = item.quantity + delta;
+
+          // Enforce bounds: min 1, max maxStock
+          if (calculated < 1) {
+            clampedQty = 1;
+          } else if (calculated > maxStock) {
+            clampedQty = maxStock;
+            if (typeof window !== "undefined") {
+              window.dispatchEvent(
+                new CustomEvent("playo_cart_toast", {
+                  detail: {
+                    product: item.product,
+                    message: `Maximum stock limit reached (${maxStock} units).`,
+                    isError: true,
+                  },
+                })
+              );
+            }
+          } else {
+            clampedQty = calculated;
           }
-          return item;
-        })
-        .filter(Boolean) as CartItem[]
+          return { ...item, quantity: clampedQty };
+        }
+        return item;
+      })
     );
+
+    try {
+      await fetch("/api/cart", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productId, quantity: clampedQty }),
+      });
+    } catch (err) {
+      console.error("Error updating cart quantity:", err);
+      refreshCartFromDb();
+    }
   };
 
-  const removeFromCart = (productId: string) => {
+  // 4. Remove item from cart
+  const removeFromCart = async (productId: string) => {
     setCartItems((prev) => prev.filter((item) => item.product.id !== productId));
+
+    try {
+      await fetch(`/api/cart?productId=${encodeURIComponent(productId)}`, {
+        method: "DELETE",
+      });
+    } catch (err) {
+      console.error("Error removing from cart:", err);
+      refreshCartFromDb();
+    }
+  };
+
+  // 5. Clear cart
+  const clearCart = async () => {
+    setCartItems([]);
+    try {
+      await fetch("/api/cart?clear=true", { method: "DELETE" });
+    } catch (err) {
+      console.error("Error clearing cart:", err);
+    }
   };
 
   const toggleWishlist = (productId: string) => {
@@ -129,10 +235,13 @@ export function useCart() {
     cartItems,
     wishlistIds,
     isCartOpen,
+    isLoading,
     setIsCartOpen,
     addToCart,
     updateQuantity,
     removeFromCart,
+    clearCart,
+    refreshCartFromDb,
     toggleWishlist,
     totalCartCount,
   };
