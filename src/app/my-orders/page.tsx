@@ -171,10 +171,10 @@ function MyOrdersContent() {
         const res = await fetch(`/api/orders${queryParam}`, { cache: "no-store" });
         const data = await res.json();
         if (data.success && Array.isArray(data.orders)) {
-          const mapped = data.orders.map(mapRawOrder);
+          const mapped: OrderDetail[] = data.orders.map(mapRawOrder);
           setOrders(mapped);
           if (urlOrderId) {
-            const found = mapped.find((o) => o.id === urlOrderId);
+            const found = mapped.find((o: OrderDetail) => o.id === urlOrderId);
             if (found) setSelectedOrderId(urlOrderId);
           }
         }

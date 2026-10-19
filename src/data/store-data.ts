@@ -7,12 +7,14 @@ export interface CategoryItem {
 }
 
 export interface ProductItem {
+  _id?: string;
   id: string;
   name: string;
   categorySlug: string;
   category?: string;
   brand?: string;
   scale?: string;
+  material?: string;
   color?: string;
   colorHex?: string;
   availableColors?: string | {
@@ -21,16 +23,24 @@ export interface ProductItem {
     inStock?: boolean;
     imageIndex?: number;
   }[];
+  images?: string[];
+  colorMappings?: {
+    id?: string;
+    color: string;
+    images?: string[];
+  }[];
   galleryImages?: {
     url: string;
     label: string;
     angleName?: string;
+    color?: string;
   }[];
   price: number;
   originalPrice: number;
   discount: string;
   rating: number;
   reviewsCount: number;
+  soldCount?: number;
   imageUrl: string;
   tag?: string;
   features?: string[];
@@ -52,6 +62,7 @@ export interface ProductItem {
     [key: string]: string | undefined;
   };
   inStock?: boolean;
+  stockCount?: number;
 }
 
 export interface TestimonialItem {

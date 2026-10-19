@@ -79,7 +79,7 @@ export default function ProductDetailClient({
 
     // 2. Add images from product.images
     if (Array.isArray(product.images)) {
-      product.images.forEach((url, idx) => {
+      product.images.forEach((url: string, idx: number) => {
         if (url && typeof url === "string" && !seenUrls.has(url)) {
           seenUrls.add(url);
           list.push({
@@ -93,7 +93,7 @@ export default function ProductDetailClient({
 
     // 3. Add images from all colorMappings so no color variant is ever missing
     if (Array.isArray(product.colorMappings)) {
-      product.colorMappings.forEach((cm: any) => {
+      product.colorMappings.forEach((cm: { color: string; images?: string[] }) => {
         if (Array.isArray(cm.images)) {
           cm.images.forEach((url: string, cIdx: number) => {
             if (url && typeof url === "string" && !seenUrls.has(url)) {

@@ -43,15 +43,17 @@ export async function GET() {
         ...p,
         _id: p._id.toString(),
         id: p.id || p._id.toString(),
+        name: p.name || "",
+        reviewsCount: Number(p.reviewsCount) || 0,
         soldCount: totalSold,
-        revenue: (salesMap[keyById]?.revenue || 0) + (salesMap[keyByName]?.revenue || 0) || totalSold * p.price,
+        revenue: (salesMap[keyById]?.revenue || 0) + (salesMap[keyByName]?.revenue || 0) || totalSold * (Number(p.price) || 0),
       };
     });
 
     // 4. Sort by soldCount descending, then reviews/rating
     rankedProducts.sort((a, b) => {
       if (b.soldCount !== a.soldCount) return b.soldCount - a.soldCount;
-      return (b.reviewsCount || 0) - (a.reviewsCount || 0);
+      return b.reviewsCount - a.reviewsCount;
     });
 
     return NextResponse.json({
