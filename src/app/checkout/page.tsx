@@ -10,7 +10,7 @@ import { useCart } from "@/data/cart-store";
 import { ArrowLeft, ShieldCheck } from "lucide-react";
 
 export default function CheckoutPage() {
-  const { cartItems, wishlistIds, isCartOpen, setIsCartOpen } = useCart();
+  const { cartItems, wishlistIds, setIsCartOpen } = useCart();
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {

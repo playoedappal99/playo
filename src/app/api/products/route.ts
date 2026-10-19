@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDatabase } from "@/lib/mongodb";
-import { escapeRegex, sanitizeInput, validateAdminAuth } from "@/lib/security";
+import { escapeRegex, validateAdminAuth } from "@/lib/security";
 import { getCachedProducts, setCachedProducts, clearProductsCache } from "@/lib/cache";
 
 export const dynamic = "force-dynamic";

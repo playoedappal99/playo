@@ -6,19 +6,16 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Search,
-  Plus,
   Trash2,
   Lock,
   ChevronDown,
   Phone,
   Package,
   Bell,
-  Sparkles,
   ExternalLink,
   UploadCloud,
   CheckCircle2,
   AlertCircle,
-  Tag,
   Flame,
 } from "lucide-react";
 import { ProductItem, CategoryItem } from "@/data/store-data";

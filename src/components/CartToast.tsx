@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
-import { Check, X, ShoppingBag, ArrowRight } from "lucide-react";
+import { Check, X, ShoppingBag } from "lucide-react";
 import { ProductItem } from "@/data/store-data";
 
 interface ToastItem {

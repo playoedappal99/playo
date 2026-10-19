@@ -13,7 +13,6 @@ import {
   ChevronRight,
   Printer,
   Calendar,
-  ShoppingBag,
   ArrowLeft,
   Clock,
   ShieldCheck,

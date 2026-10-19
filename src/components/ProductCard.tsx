@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { 
@@ -32,8 +32,6 @@ export default function ProductCard({
   onAddToCart,
   onBuyNow,
   onQuickView,
-  inCart = false,
-  cartQuantity = 0,
   className = "",
   variant = "catalog",
 }: ProductCardProps) {

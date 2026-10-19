@@ -150,13 +150,11 @@ export function useCart() {
 
   // 3. Update quantity: Never less than 1, never greater than available stock!
   const updateQuantity = async (productId: string, delta: number) => {
-    let targetProduct: ProductItem | null = null;
     let clampedQty = 1;
 
     setCartItems((prev) =>
       prev.map((item) => {
         if (item.product.id === productId) {
-          targetProduct = item.product;
           const maxStock = typeof item.product.stockCount === "number" ? item.product.stockCount : 999;
           const calculated = item.quantity + delta;
 

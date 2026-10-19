@@ -206,7 +206,7 @@ export async function PATCH(req: NextRequest) {
     const availableStock = product && typeof product.stockCount === "number" ? product.stockCount : 10;
 
     const cartDoc = await db.collection("carts").findOne({ cartId });
-    let currentItems = (cartDoc?.items || []) as { productId: string; quantity: number }[];
+    const currentItems = (cartDoc?.items || []) as { productId: string; quantity: number }[];
 
     const itemIdx = currentItems.findIndex(
       (it) => it.productId === productId || it.productId === product?.id

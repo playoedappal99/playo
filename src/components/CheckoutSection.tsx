@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ChevronDown,
@@ -137,9 +136,14 @@ export default function CheckoutSection({
       .then((res) => res.json())
       .then((data) => {
         if (data.success && Array.isArray(data.offers)) {
-          const active = data.offers.filter((o: any) => o.status === "Active");
+          interface OfferItem {
+            minAmount: number;
+            discountPercentage: number;
+            status: string;
+          }
+          const active = (data.offers as OfferItem[]).filter((o) => o.status === "Active");
           if (active.length > 0) {
-            active.sort((a: any, b: any) => b.discountPercentage - a.discountPercentage);
+            active.sort((a, b) => b.discountPercentage - a.discountPercentage);
             setActiveOffer(active[0]);
           }
         }

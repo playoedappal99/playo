@@ -5,7 +5,7 @@ import { getCachedCategories, setCachedCategories, clearCategoriesCache } from "
 
 export const dynamic = "force-dynamic";
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     const cached = getCachedCategories();
     if (cached) {

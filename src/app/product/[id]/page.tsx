@@ -16,7 +16,7 @@ export async function generateMetadata({
     const { id } = await params;
     const db = await getDatabase();
 
-    let query: any = { id };
+    let query: Record<string, unknown> = { id };
     if (ObjectId.isValid(id)) {
       query = { $or: [{ id }, { _id: new ObjectId(id) }] };
     }
@@ -56,7 +56,7 @@ export default async function ProductDetailPage({
   const { id } = await params;
   const db = await getDatabase();
 
-  let query: any = { id };
+  let query: Record<string, unknown> = { id };
   if (ObjectId.isValid(id)) {
     query = { $or: [{ id }, { _id: new ObjectId(id) }] };
   }
@@ -101,7 +101,7 @@ export default async function ProductDetailPage({
     allImgs.unshift(rawProduct.imageUrl);
   }
   if (Array.isArray(rawProduct.colorMappings)) {
-    rawProduct.colorMappings.forEach((cm: any) => {
+    rawProduct.colorMappings.forEach((cm: { color: string; images?: string[] }) => {
       if (Array.isArray(cm.images)) {
         cm.images.forEach((url: string) => {
           if (url && typeof url === "string" && !allImgs.includes(url)) {
@@ -116,12 +116,13 @@ export default async function ProductDetailPage({
     allImgs.push("/images/catalog/porsche-drift-rc.jpg");
   }
 
-  const gallery = Array.isArray(rawProduct.galleryImages) && rawProduct.galleryImages.length > 0
-    ? [...rawProduct.galleryImages]
-    : [];
+  const gallery: { url: string; label: string; angleName?: string; color?: string }[] =
+    Array.isArray(rawProduct.galleryImages) && rawProduct.galleryImages.length > 0
+      ? [...rawProduct.galleryImages]
+      : [];
 
   allImgs.forEach((url, i) => {
-    if (!gallery.some((g: any) => g.url === url)) {
+    if (!gallery.some((g) => g.url === url)) {
       gallery.push({
         url,
         label: `${rawProduct.name} - View ${i + 1}`,
@@ -131,10 +132,10 @@ export default async function ProductDetailPage({
   });
 
   if (Array.isArray(rawProduct.colorMappings)) {
-    rawProduct.colorMappings.forEach((cm: any) => {
+    rawProduct.colorMappings.forEach((cm: { color: string; images?: string[] }) => {
       if (Array.isArray(cm.images)) {
         cm.images.forEach((url: string) => {
-          const found = gallery.find((g: any) => g.url === url);
+          const found = gallery.find((g) => g.url === url);
           if (found) {
             found.color = cm.color;
             if (!found.label.includes(cm.color)) {
@@ -147,7 +148,7 @@ export default async function ProductDetailPage({
   }
 
   // Fetch up to 4 related products directly in database
-  let relatedDocs: any[] = [];
+  let relatedDocs: Record<string, unknown>[] = [];
   try {
     relatedDocs = await db
       .collection("products")
@@ -174,7 +175,7 @@ export default async function ProductDetailPage({
     inStock: (typeof plainProduct.stockCount === "number" ? plainProduct.stockCount : 0) > 0,
   };
 
-  const formattedRelated: ProductItem[] = plainRelated.map((p: any) => ({
+  const formattedRelated: ProductItem[] = plainRelated.map((p: Record<string, unknown> & { _id: unknown; id?: string; imageUrl?: string; images?: string[]; stockCount?: number }) => ({
     ...p,
     _id: String(p._id),
     id: p.id || String(p._id),

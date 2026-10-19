@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDatabase } from "@/lib/mongodb";
 import { validateAdminAuth } from "@/lib/security";
-import { getCachedOffers, setCachedOffers, clearOffersCache } from "@/lib/cache";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     const db = await getDatabase();
     const offers = await db
