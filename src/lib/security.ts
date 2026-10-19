@@ -23,18 +23,40 @@ export function sanitizeInput(input: any, maxLength = 1000): string {
     .slice(0, maxLength);
 }
 
+import { verifySessionToken } from "./admin-auth";
+
 /**
- * Validates admin API authorization header.
+ * Validates admin API authorization via secret key header OR verified HTTP-only session cookie.
  */
 export function validateAdminAuth(req: NextRequest | Request): boolean {
   const adminKey =
     process.env.ADMIN_API_KEY || "playo_secure_admin_key_2026_edappal";
   const headerKey = req.headers.get("x-admin-key");
 
-  if (!headerKey || headerKey !== adminKey) {
-    return false;
+  if (headerKey && headerKey === adminKey) {
+    return true;
   }
-  return true;
+
+  // Check signed HTTP-only session cookie
+  if ("cookies" in req && typeof (req as NextRequest).cookies?.get === "function") {
+    const sessionCookie = (req as NextRequest).cookies.get("playo_admin_session")?.value;
+    if (sessionCookie) {
+      const verification = verifySessionToken(sessionCookie);
+      if (verification.valid) return true;
+    }
+  }
+
+  // Fallback check on raw Cookie header
+  const rawCookie = req.headers.get("cookie");
+  if (rawCookie) {
+    const match = rawCookie.match(/playo_admin_session=([^;]+)/);
+    if (match && match[1]) {
+      const verification = verifySessionToken(match[1]);
+      if (verification.valid) return true;
+    }
+  }
+
+  return false;
 }
 
 /**

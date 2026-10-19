@@ -62,6 +62,7 @@ export async function POST(req: NextRequest) {
 
       return NextResponse.json({
         success: true,
+        url: results[0]?.secure_url || "",
         urls: results.map((r) => r.secure_url),
         results,
       });

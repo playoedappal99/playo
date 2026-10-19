@@ -50,14 +50,20 @@ export default async function CatalogPage() {
       } as ProductItem;
     });
 
-    initialCategories = plainCategories.map((c: any) => ({
-      id: c.id || String(c._id),
-      name: c.name,
-      slug: c.slug,
-      imageUrl: c.imageUrl,
-      href: c.href || `/catalog?category=${c.slug}`,
-      createdAt: c.createdAt,
-    }));
+    initialCategories = plainCategories.map((c: any) => {
+      let img = c.imageUrl;
+      if (!img || typeof img !== "string" || img.startsWith("blob:")) {
+        img = "https://images.unsplash.com/photo-1594787318286-3d835c1d207f?auto=format&fit=crop&w=600&q=80";
+      }
+      return {
+        id: c.id || String(c._id),
+        name: c.name,
+        slug: c.slug,
+        imageUrl: img,
+        href: c.href || `/catalog?category=${c.slug}`,
+        createdAt: c.createdAt,
+      };
+    });
   } catch (err) {
     console.error("Error loading SSR catalog data:", err);
   }

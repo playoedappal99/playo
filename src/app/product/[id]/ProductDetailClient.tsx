@@ -155,7 +155,7 @@ export default function ProductDetailClient({
     setSelectedColor(colorName);
     if (!product || !Array.isArray(product.colorMappings)) return;
     const target = colorName.toLowerCase().trim();
-    const matching = product.colorMappings.find((cm: any) => {
+    const matching = product.colorMappings.find((cm: { color?: string; images?: string[] }) => {
       if (!cm.color) return false;
       const subColors = cm.color.toLowerCase().split(",").map((s: string) => s.trim());
       return subColors.includes(target) || cm.color.toLowerCase().includes(target);

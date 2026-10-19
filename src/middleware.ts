@@ -23,7 +23,43 @@ const MALICIOUS_PATTERNS = [
   /proc\/self/i,
 ];
 
-export function middleware(req: NextRequest) {
+async function verifySessionTokenEdge(token: string | undefined, secret: string): Promise<boolean> {
+  if (!token || !token.includes(".")) return false;
+  const [base64Payload, signature] = token.split(".");
+  if (!base64Payload || !signature) return false;
+
+  try {
+    const enc = new TextEncoder();
+    const key = await crypto.subtle.importKey(
+      "raw",
+      enc.encode(secret),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"]
+    );
+    const sigBuf = await crypto.subtle.sign("HMAC", key, enc.encode(base64Payload));
+    const sigBytes = new Uint8Array(sigBuf);
+    let binary = "";
+    for (let i = 0; i < sigBytes.byteLength; i++) {
+      binary += String.fromCharCode(sigBytes[i]);
+    }
+    const computedSignature = btoa(binary)
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_")
+      .replace(/=+$/, "");
+
+    if (computedSignature !== signature) return false;
+
+    // Check expiration
+    const jsonStr = atob(base64Payload.replace(/-/g, "+").replace(/_/g, "/"));
+    const payload = JSON.parse(jsonStr);
+    return typeof payload.expiresAt === "number" && Date.now() <= payload.expiresAt;
+  } catch {
+    return false;
+  }
+}
+
+export async function middleware(req: NextRequest) {
   try {
     const { pathname } = req.nextUrl;
     const method = req.method;
@@ -55,6 +91,9 @@ export function middleware(req: NextRequest) {
       } else if (pathname === "/api/orders" && method === "POST") {
         limit = 15;
         windowMs = 120000; // 2 minutes
+      } else if (pathname.startsWith("/api/admin/auth")) {
+        limit = 20;
+        windowMs = 60000;
       }
 
       const rateKey = `${ip}:${pathname.split("/").slice(0, 3).join("/")}`;
@@ -89,17 +128,23 @@ export function middleware(req: NextRequest) {
       (pathname.startsWith("/api/products") && (method === "POST" || method === "PUT" || method === "DELETE")) ||
       (pathname.startsWith("/api/categories") && (method === "POST" || method === "DELETE")) ||
       (pathname.startsWith("/api/offers") && (method === "POST" || method === "PATCH" || method === "DELETE")) ||
+      (pathname.startsWith("/api/notifications") && (method === "PATCH" || method === "DELETE")) ||
       (pathname.startsWith("/api/upload") && method === "POST");
 
     if (isMutatingAdminEndpoint) {
       const adminKey = process.env.ADMIN_API_KEY || "playo_secure_admin_key_2026_edappal";
       const requestKey = req.headers.get("x-admin-key");
+      const sessionSecret = process.env.ADMIN_SESSION_SECRET || "playo_admin_jwt_secret_token_99_edappal_superkey_2026";
+      const sessionCookie = req.cookies.get("playo_admin_session")?.value;
 
-      if (!requestKey || requestKey !== adminKey) {
+      const isHeaderValid = Boolean(requestKey && requestKey === adminKey);
+      const isCookieValid = await verifySessionTokenEdge(sessionCookie, sessionSecret);
+
+      if (!isHeaderValid && !isCookieValid) {
         return new NextResponse(
           JSON.stringify({
             success: false,
-            error: "Unauthorized: Valid admin security key required for this operation.",
+            error: "Unauthorized: Valid admin session or security key required for this operation.",
           }),
           { status: 401, headers: { "Content-Type": "application/json" } }
         );

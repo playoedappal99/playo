@@ -74,7 +74,7 @@ export default function CategorySection({
                 {/* Category Image Container */}
                 <div className="relative aspect-[16/11] w-full overflow-hidden bg-[#F5F7FA] flex items-center justify-center p-3 sm:p-4">
                   <Image
-                    src={cat.imageUrl}
+                    src={cat.imageUrl && !cat.imageUrl.startsWith("blob:") ? cat.imageUrl : "https://images.unsplash.com/photo-1594787318286-3d835c1d207f?auto=format&fit=crop&w=600&q=80"}
                     alt={cat.name}
                     fill
                     className="object-contain p-2.5 group-hover:scale-108 transition-transform duration-500"

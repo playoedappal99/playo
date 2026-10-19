@@ -14,8 +14,22 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://playoedappal.in"),
   title: "Playo Edappal | Premium Kids Ride-Ons, Bikes, Jeeps & Toys Superstore",
-  description: "Discover top-tier kids' adventure bikes, light-up scooters, battery 4x4 jeeps, diecast model cars, and giant plush soft toys at Playo Edappal. Same-day delivery across Kerala with warranty.",
+  description:
+    "Discover top-tier kids' adventure bikes, light-up scooters, battery 4x4 jeeps, diecast model cars, and giant plush soft toys at Playo Edappal. Same-day delivery across Kerala with warranty.",
+  alternates: {
+    canonical: "https://playoedappal.in",
+  },
+  openGraph: {
+    title: "Playo Edappal | Premium Kids Ride-Ons, Bikes, Jeeps & Toys Superstore",
+    description:
+      "Discover top-tier kids' adventure bikes, light-up scooters, battery 4x4 jeeps, diecast model cars, and giant plush soft toys at Playo Edappal.",
+    url: "https://playoedappal.in",
+    siteName: "Playo Edappal",
+    locale: "en_IN",
+    type: "website",
+  },
 };
 
 export default function RootLayout({

@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "push": "git config user.name midlaj99 && git config user.email muhammedmidlaj561@gmail.com && git add -A && git commit -m \"feat: admin auth, forgot password otp via gmail smtp, category fix, and playoedappal.in\" && git push origin main"
   },
   "dependencies": {
     "lucide-react": "^1.56.0",

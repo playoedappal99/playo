@@ -21,14 +21,29 @@ export async function GET() {
       .sort({ createdAt: -1 })
       .toArray();
 
-    const formatted = categories.map((c) => ({
-      id: c.id || c._id.toString(),
-      name: c.name,
-      slug: c.slug,
-      imageUrl: c.imageUrl,
-      href: c.href || `/catalog?category=${c.slug}`,
-      createdAt: c.createdAt ? new Date(c.createdAt).toISOString() : new Date().toISOString(),
-    }));
+    // Self-healing migration: update any existing blob: URLs directly in MongoDB
+    for (const c of categories) {
+      if (c.imageUrl && typeof c.imageUrl === "string" && c.imageUrl.startsWith("blob:")) {
+        const permanentCdn = "https://images.unsplash.com/photo-1594787318286-3d835c1d207f?auto=format&fit=crop&w=600&q=80";
+        await db.collection("categories").updateOne({ _id: c._id }, { $set: { imageUrl: permanentCdn } });
+        c.imageUrl = permanentCdn;
+      }
+    }
+
+    const formatted = categories.map((c) => {
+      let img = c.imageUrl;
+      if (!img || typeof img !== "string" || img.startsWith("blob:")) {
+        img = "https://images.unsplash.com/photo-1594787318286-3d835c1d207f?auto=format&fit=crop&w=600&q=80";
+      }
+      return {
+        id: c.id || c._id.toString(),
+        name: c.name,
+        slug: c.slug,
+        imageUrl: img,
+        href: c.href || `/catalog?category=${c.slug}`,
+        createdAt: c.createdAt ? new Date(c.createdAt).toISOString() : new Date().toISOString(),
+      };
+    });
 
     const responseData = { success: true, count: formatted.length, categories: formatted };
     setCachedCategories(responseData);
@@ -86,7 +101,7 @@ export async function POST(req: NextRequest) {
       name: cleanName,
       slug,
       imageUrl:
-        imageUrl && typeof imageUrl === "string" && imageUrl.trim()
+        imageUrl && typeof imageUrl === "string" && !imageUrl.startsWith("blob:") && imageUrl.trim()
           ? imageUrl.trim()
           : "https://images.unsplash.com/photo-1594787318286-3d835c1d207f?auto=format&fit=crop&w=600&q=80",
       href: `/catalog?category=${slug}`,

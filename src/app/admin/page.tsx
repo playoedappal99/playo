@@ -21,6 +21,7 @@ import {
 import { ProductItem, CategoryItem } from "@/data/store-data";
 import Navbar from "@/components/Navbar";
 import { useCart } from "@/data/cart-store";
+import AdminAuthScreen from "@/components/AdminAuthScreen";
 
 export type AdminTab =
   | "Inventory"
@@ -135,6 +136,18 @@ function AdminContent() {
   const router = useRouter();
   const { cartItems, wishlistIds, setIsCartOpen } = useCart();
   const [isMounted, setIsMounted] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+
+  // Check admin session on mount
+  useEffect(() => {
+    setIsMounted(true);
+    fetch("/api/admin/auth")
+      .then((res) => res.json())
+      .then((data) => {
+        setIsAuthenticated(Boolean(data.authenticated));
+      })
+      .catch(() => setIsAuthenticated(false));
+  }, []);
 
   // Active Tab
   const [activeTab, setActiveTab] = useState<AdminTab>("Inventory");
@@ -292,24 +305,26 @@ function AdminContent() {
   }, []);
 
   useEffect(() => {
-    setIsMounted(true);
-    fetchProducts();
-    fetchCategories();
-    fetchOrders();
-    fetchNotifications();
-    fetchOffers();
-    fetchBestsellers();
-  }, [fetchProducts, fetchCategories, fetchOrders, fetchNotifications, fetchOffers, fetchBestsellers]);
+    if (isAuthenticated) {
+      fetchProducts();
+      fetchCategories();
+      fetchOrders();
+      fetchNotifications();
+      fetchOffers();
+      fetchBestsellers();
+    }
+  }, [isAuthenticated, fetchProducts, fetchCategories, fetchOrders, fetchNotifications, fetchOffers, fetchBestsellers]);
 
   // Re-fetch when switching tabs
   useEffect(() => {
+    if (!isAuthenticated) return;
     if (activeTab === "Inventory") fetchProducts();
     if (activeTab === "Orders") fetchOrders();
     if (activeTab === "Category") fetchCategories();
     if (activeTab === "Notifications") fetchNotifications();
     if (activeTab === "Best selling") fetchBestsellers();
     if (activeTab === "Offer") fetchOffers();
-  }, [activeTab, fetchProducts, fetchOrders, fetchCategories, fetchNotifications, fetchBestsellers, fetchOffers]);
+  }, [isAuthenticated, activeTab, fetchProducts, fetchOrders, fetchCategories, fetchNotifications, fetchBestsellers, fetchOffers]);
 
   // Handle Category Add & Upload
   const handleOpenAddCategory = () => {
@@ -338,6 +353,7 @@ function AdminContent() {
       // Upload to Cloudinary if file was selected
       if (categoryImageFile) {
         const formData = new FormData();
+        formData.append("files", categoryImageFile);
         formData.append("file", categoryImageFile);
         formData.append("folder", "playoedappal/categories");
 
@@ -347,9 +363,17 @@ function AdminContent() {
           body: formData,
         });
         const uploadData = await uploadRes.json();
-        if (uploadData.success && uploadData.url) {
-          finalImageUrl = uploadData.url;
+        if (uploadData.success && (uploadData.url || uploadData.urls?.[0])) {
+          finalImageUrl = uploadData.url || uploadData.urls[0];
+        } else {
+          alert("Category image upload error: " + (uploadData.error || "Upload failed"));
+          return;
         }
+      }
+
+      // Never save temporary blob URLs to database
+      if (finalImageUrl.startsWith("blob:") || !finalImageUrl) {
+        finalImageUrl = "https://images.unsplash.com/photo-1594787318286-3d835c1d207f?auto=format&fit=crop&w=600&q=80";
       }
 
       // Save category to MongoDB
@@ -793,6 +817,40 @@ function AdminContent() {
     }
   };
 
+  // Admin Logout Handler
+  const handleLogout = async () => {
+    if (confirm("Are you sure you want to log out from Playo Admin?")) {
+      try {
+        await fetch("/api/admin/auth", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "logout" }),
+        });
+      } catch (e) {
+        console.error("Logout error:", e);
+      }
+      setIsAuthenticated(false);
+      router.push("/admin");
+    }
+  };
+
+  // 1. Session verification loading state
+  if (isAuthenticated === null) {
+    return (
+      <div className="min-h-screen bg-[#070D18] flex items-center justify-center p-8">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-4 border-[#FF9800]/30 border-t-[#FF9800] rounded-full animate-spin" />
+          <p className="text-xs font-semibold text-slate-400 tracking-wider uppercase">Verifying Admin Session...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // 2. Strict Authentication Guard - Only verified admin credentials can view dashboard
+  if (!isAuthenticated) {
+    return <AdminAuthScreen onAuthenticated={() => setIsAuthenticated(true)} />;
+  }
+
   return (
     <div className="min-h-screen bg-[#F4F9FD] text-slate-800 font-sans flex flex-col selection:bg-sky-500 selection:text-white">
       {/* 1. MAIN STORE NAVBAR */}
@@ -841,11 +899,7 @@ function AdminContent() {
             <div className="flex items-center gap-2.5 self-end md:self-auto">
               <button
                 type="button"
-                onClick={() => {
-                  if (confirm("Are you sure you want to log out from Playo Admin?")) {
-                    router.push("/");
-                  }
-                }}
+                onClick={handleLogout}
                 className="bg-[#FFF1F2] hover:bg-[#FFE4E6] text-[#E11D48] border border-[#FECDD3] px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer active:scale-95"
                 title="Sign Out"
               >
@@ -1291,7 +1345,7 @@ function AdminContent() {
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="relative w-12 h-12 rounded-xl bg-slate-50 border border-slate-100 overflow-hidden shrink-0 flex items-center justify-center p-1">
                       <Image
-                        src={c.imageUrl}
+                        src={c.imageUrl && !c.imageUrl.startsWith("blob:") ? c.imageUrl : "https://images.unsplash.com/photo-1594787318286-3d835c1d207f?auto=format&fit=crop&w=600&q=80"}
                         alt={c.name}
                         fill
                         className="object-contain p-1"

@@ -20,6 +20,14 @@ export default async function Home() {
 
     try {
       rawCategories = await db.collection("categories").find({}).sort({ createdAt: -1 }).toArray();
+      // Self-healing: persist permanent CDN URL to database if any blob URL is detected
+      for (const c of rawCategories) {
+        if (c.imageUrl && typeof c.imageUrl === "string" && c.imageUrl.startsWith("blob:")) {
+          const permanentCdn = "https://images.unsplash.com/photo-1594787318286-3d835c1d207f?auto=format&fit=crop&w=600&q=80";
+          db.collection("categories").updateOne({ _id: c._id }, { $set: { imageUrl: permanentCdn } }).catch(() => {});
+          c.imageUrl = permanentCdn;
+        }
+      }
     } catch (e: any) {
       catError = e?.message || String(e);
       console.error("SSR categories error:", catError);
@@ -44,14 +52,20 @@ export default async function Home() {
       } as ProductItem;
     });
 
-    const formattedCategories: CategoryItem[] = plainCategories.map((c: any) => ({
-      id: c.id || String(c._id),
-      name: c.name,
-      slug: c.slug,
-      imageUrl: c.imageUrl,
-      href: c.href || `/catalog?category=${c.slug}`,
-      createdAt: c.createdAt,
-    }));
+    const formattedCategories: CategoryItem[] = plainCategories.map((c: any) => {
+      let img = c.imageUrl;
+      if (!img || typeof img !== "string" || img.startsWith("blob:")) {
+        img = "https://images.unsplash.com/photo-1594787318286-3d835c1d207f?auto=format&fit=crop&w=600&q=80";
+      }
+      return {
+        id: c.id || String(c._id),
+        name: c.name,
+        slug: c.slug,
+        imageUrl: img,
+        href: c.href || `/catalog?category=${c.slug}`,
+        createdAt: c.createdAt,
+      };
+    });
 
     return (
       <HomeClient

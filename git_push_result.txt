@@ -1,0 +1,7 @@
+ERROR: Command failed: git push origin main
+To https://github.com/playoedappal99/playo.git
+   d5c6162..3f1aa43  main -> main
+
+
+To https://github.com/playoedappal99/playo.git
+   d5c6162..3f1aa43  main -> main
