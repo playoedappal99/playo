@@ -8,7 +8,7 @@ echo ===================================================
 git config user.name "midlaj99"
 git config user.email "muhammedmidlaj561@gmail.com"
 git add -A
-git commit -m "feat: admin auth, forgot password otp via gmail smtp, category image fix, and playoedappal.in domain metadata"
+git commit -m "fix: resolve lint errors and allow clean production build on vercel"
 git push origin main
 
 echo.

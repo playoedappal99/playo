@@ -164,7 +164,7 @@ export async function middleware(req: NextRequest) {
     );
 
     return response;
-  } catch (_e) {
+  } catch {
     return NextResponse.next();
   }
 }

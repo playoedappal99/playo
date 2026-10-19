@@ -87,7 +87,7 @@ export default function AdminAuthScreen({ onAuthenticated }: AdminAuthScreenProp
       } else {
         setErrorMsg(data.error || "Invalid username or password.");
       }
-    } catch (err: any) {
+    } catch {
       setErrorMsg("Network error. Please try again.");
     } finally {
       setIsLoading(false);
@@ -115,7 +115,7 @@ export default function AdminAuthScreen({ onAuthenticated }: AdminAuthScreenProp
       } else {
         setErrorMsg(data.error || "Failed to send OTP.");
       }
-    } catch (err: any) {
+    } catch {
       setErrorMsg("Network error sending OTP.");
     } finally {
       setIsLoading(false);
@@ -152,7 +152,7 @@ export default function AdminAuthScreen({ onAuthenticated }: AdminAuthScreenProp
       } else {
         setErrorMsg(data.error || "Invalid OTP code.");
       }
-    } catch (err: any) {
+    } catch {
       setErrorMsg("Network error verifying OTP.");
     } finally {
       setIsLoading(false);
@@ -195,7 +195,7 @@ export default function AdminAuthScreen({ onAuthenticated }: AdminAuthScreenProp
       } else {
         setErrorMsg(data.error || "Failed to reset password.");
       }
-    } catch (err: any) {
+    } catch {
       setErrorMsg("Network error updating password.");
     } finally {
       setIsLoading(false);

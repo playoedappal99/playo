@@ -132,7 +132,7 @@ export async function ensureAdminUserInitialized() {
 export async function authenticateAdminUser(username: string, pass: string): Promise<boolean> {
   const cleanUser = username.trim();
   const db = await getDatabase();
-  let userDoc = await db.collection("admin_users").findOne({ username: cleanUser });
+  const userDoc = await db.collection("admin_users").findOne({ username: cleanUser });
 
   if (!userDoc) {
     // If not in DB yet, check against default credentials

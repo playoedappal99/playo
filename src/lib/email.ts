@@ -29,7 +29,6 @@ export async function sendEmail({ to, subject, html, text }: SendEmailOptions): 
     );
 
     let stage = 0;
-    let fullResponse = "";
 
     const sendCmd = (cmd: string) => {
       socket.write(cmd + "\r\n");
@@ -38,7 +37,6 @@ export async function sendEmail({ to, subject, html, text }: SendEmailOptions): 
     socket.setEncoding("utf8");
 
     socket.on("data", (data: string) => {
-      fullResponse += data;
       const lines = data.trim().split("\n");
       const lastLine = lines[lines.length - 1];
 
