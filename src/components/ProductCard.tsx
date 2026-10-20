@@ -65,9 +65,9 @@ export default function ProductCard({
           {/* Top Image Container */}
           <Link
             href={`/product/${product.id}`}
-            className="relative aspect-square w-full bg-white p-2.5 sm:p-4 flex items-center justify-center overflow-hidden border-b border-gray-100/60 cursor-pointer block"
+            className="relative aspect-square w-full bg-white p-0 m-0 flex items-center justify-center overflow-hidden border-b border-gray-100/60 cursor-pointer block"
           >
-            <div className="relative w-full h-full">
+            <div className="relative w-full h-full p-0 m-0">
               <Image
                 src={getOptimizedImageUrl(product.imageUrl, { width: 500 })}
                 alt={product.name}
@@ -192,10 +192,10 @@ export default function ProductCard({
         {/* Top Media Container */}
         <Link
           href={`/product/${product.id}`}
-          className="relative aspect-[4/3] w-full bg-gradient-to-b from-[#f8fafc] to-[#f1f5f9]/50 p-2.5 sm:p-3.5 flex items-center justify-center overflow-hidden border-b border-gray-50 cursor-pointer block"
+          className="relative aspect-[4/3] w-full bg-gradient-to-b from-[#f8fafc] to-[#f1f5f9]/50 p-0 m-0 flex items-center justify-center overflow-hidden border-b border-gray-50 cursor-pointer block"
         >
           {/* Product Image */}
-          <div className="relative w-full h-full">
+          <div className="relative w-full h-full p-0 m-0">
             <Image
               src={getOptimizedImageUrl(product.imageUrl, { width: 500 })}
               alt={product.name}

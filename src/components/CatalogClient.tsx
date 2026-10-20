@@ -724,12 +724,12 @@ export default function CatalogClient({
             </button>
 
             <div className="grid grid-cols-1 md:grid-cols-2">
-              <div className="relative aspect-square bg-[#f8fafc] p-6 flex items-center justify-center">
+              <div className="relative aspect-square bg-[#f8fafc] p-0 m-0 flex items-center justify-center overflow-hidden">
                 <Image
                   src={quickViewProduct.imageUrl}
                   alt={quickViewProduct.name}
                   fill
-                  className="object-contain p-4"
+                  className="object-contain"
                 />
               </div>
 
