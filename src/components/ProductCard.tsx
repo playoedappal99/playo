@@ -65,16 +65,29 @@ export default function ProductCard({
           {/* Top Image Container */}
           <Link
             href={`/product/${product.id}`}
-            className="relative aspect-[4/3] w-full bg-white p-0 m-0 flex items-center justify-center overflow-hidden border-b border-gray-100/60 cursor-pointer block"
+            className="relative aspect-square w-full bg-slate-50 p-0 m-0 flex items-center justify-center overflow-hidden border-b border-gray-100/60 cursor-pointer block"
           >
-            <div className="relative w-full h-full p-0 m-0">
+            {/* Ambient matching blurred background so side margins are naturally filled */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+              <Image
+                src={getOptimizedImageUrl(product.imageUrl, { width: 100 })}
+                alt=""
+                fill
+                unoptimized
+                aria-hidden="true"
+                className="object-cover scale-125 blur-xl opacity-35"
+              />
+            </div>
+
+            {/* Main Product Image - Always fully visible, never cropped */}
+            <div className="relative w-full h-full p-2 flex items-center justify-center z-1">
               <Image
                 src={getOptimizedImageUrl(product.imageUrl, { width: 500 })}
                 alt={product.name}
                 fill
                 unoptimized
-                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 33vw"
-                className="object-cover object-center group-hover:scale-105 transition-transform duration-500 ease-out w-full h-full"
+                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                className="object-contain object-center group-hover:scale-105 transition-transform duration-500 ease-out"
               />
             </div>
 
@@ -192,17 +205,29 @@ export default function ProductCard({
         {/* Top Media Container */}
         <Link
           href={`/product/${product.id}`}
-          className="relative aspect-[4/3] w-full bg-gradient-to-b from-[#f8fafc] to-[#f1f5f9]/50 p-0 m-0 flex items-center justify-center overflow-hidden border-b border-gray-50 cursor-pointer block"
+          className="relative aspect-square w-full bg-slate-50 p-0 m-0 flex items-center justify-center overflow-hidden border-b border-gray-50 cursor-pointer block"
         >
-          {/* Product Image */}
-          <div className="relative w-full h-full p-0 m-0">
+          {/* Ambient matching blurred background */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            <Image
+              src={getOptimizedImageUrl(product.imageUrl, { width: 100 })}
+              alt=""
+              fill
+              unoptimized
+              aria-hidden="true"
+              className="object-cover scale-125 blur-xl opacity-35"
+            />
+          </div>
+
+          {/* Product Image - Fully visible, never cropped */}
+          <div className="relative w-full h-full p-2 flex items-center justify-center z-1">
             <Image
               src={getOptimizedImageUrl(product.imageUrl, { width: 500 })}
               alt={product.name}
               fill
               unoptimized
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-              className="object-cover object-center group-hover:scale-106 transition-transform duration-500 ease-out w-full h-full"
+              className="object-contain object-center group-hover:scale-106 transition-transform duration-500 ease-out"
             />
           </div>
 
