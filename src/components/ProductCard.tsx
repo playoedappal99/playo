@@ -65,7 +65,7 @@ export default function ProductCard({
           {/* Top Image Container */}
           <Link
             href={`/product/${product.id}`}
-            className="relative aspect-square w-full bg-white p-0 m-0 flex items-center justify-center overflow-hidden border-b border-gray-100/60 cursor-pointer block"
+            className="relative aspect-[4/3] w-full bg-white p-0 m-0 flex items-center justify-center overflow-hidden border-b border-gray-100/60 cursor-pointer block"
           >
             <div className="relative w-full h-full p-0 m-0">
               <Image
@@ -74,7 +74,7 @@ export default function ProductCard({
                 fill
                 unoptimized
                 sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 33vw"
-                className="object-contain object-center group-hover:scale-105 transition-transform duration-500 ease-out"
+                className="object-cover object-center group-hover:scale-105 transition-transform duration-500 ease-out w-full h-full"
               />
             </div>
 
@@ -100,9 +100,9 @@ export default function ProductCard({
           </Link>
 
           {/* Product Details */}
-          <div className="p-2.5 sm:p-4 pb-1.5 sm:pb-2 space-y-1 sm:space-y-2">
+          <div className="px-2.5 sm:px-3.5 py-1.5 sm:py-2.5 space-y-0.5 sm:space-y-1">
             {/* Meta row: Brand / Scale */}
-            <div className="flex items-center justify-between text-xs min-h-[0.95rem] sm:min-h-[1.125rem]">
+            <div className="flex items-center justify-between text-xs min-h-[0.85rem] sm:min-h-[1rem]">
               {brandName ? (
                 <span className="text-sky-600 font-semibold tracking-wider uppercase text-[10px] sm:text-[11px]">
                   {brandName}
@@ -125,7 +125,7 @@ export default function ProductCard({
             {/* Product Name */}
             <Link href={`/product/${product.id}`} className="block">
               <h3
-                className="text-xs sm:text-sm font-bold text-gray-900 leading-snug group-hover:text-sky-600 transition-colors line-clamp-2 min-h-[2rem] sm:min-h-[2.5rem] cursor-pointer"
+                className="text-xs sm:text-sm font-bold text-gray-900 leading-snug group-hover:text-sky-600 transition-colors line-clamp-2 min-h-[1.75rem] sm:min-h-[2.25rem] cursor-pointer"
               >
                 {product.name}
               </h3>
@@ -133,7 +133,7 @@ export default function ProductCard({
 
             {/* Price */}
             <div className="pt-0.5">
-              <span className="text-sm sm:text-lg font-bold text-gray-900">
+              <span className="text-sm sm:text-base font-bold text-gray-900">
                 ₹{product.price.toLocaleString("en-IN")}
               </span>
             </div>
@@ -141,20 +141,20 @@ export default function ProductCard({
         </div>
 
         {/* Action Buttons Row */}
-        <div className="p-2.5 sm:p-4 pt-1 sm:pt-2">
+        <div className="px-2.5 sm:px-3.5 pb-2.5 sm:pb-3 pt-0.5 sm:pt-1">
           {isOutOfStock ? (
             <div className="grid grid-cols-2 gap-1 sm:gap-2">
               <button
                 type="button"
                 disabled
-                className="py-1.5 sm:py-2.5 px-1 sm:px-2 rounded-lg sm:rounded-xl text-[10px] sm:text-sm font-medium bg-[#94a3b8] text-white flex items-center justify-center cursor-not-allowed opacity-90 truncate"
+                className="py-1.5 sm:py-2 px-1 sm:px-2 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-medium bg-[#94a3b8] text-white flex items-center justify-center cursor-not-allowed opacity-90 truncate"
               >
                 Out of Stock
               </button>
               <button
                 type="button"
                 disabled
-                className="py-1.5 sm:py-2.5 px-1 sm:px-2 rounded-lg sm:rounded-xl text-[10px] sm:text-sm font-medium bg-[#94a3b8] text-white flex items-center justify-center cursor-not-allowed opacity-90 truncate"
+                className="py-1.5 sm:py-2 px-1 sm:px-2 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-medium bg-[#94a3b8] text-white flex items-center justify-center cursor-not-allowed opacity-90 truncate"
               >
                 Out of Stock
               </button>
@@ -164,7 +164,7 @@ export default function ProductCard({
               <button
                 type="button"
                 onClick={handleAddClick}
-                className="py-1.5 sm:py-2.5 px-1 sm:px-2 rounded-lg sm:rounded-xl text-[10px] sm:text-sm font-bold flex items-center justify-center transition-all duration-200 cursor-pointer shadow-xs active:scale-95 truncate bg-[#0D1B2A] hover:bg-black text-white"
+                className="py-1.5 sm:py-2 px-1 sm:px-2 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold flex items-center justify-center transition-all duration-200 cursor-pointer shadow-xs active:scale-95 truncate bg-[#0D1B2A] hover:bg-black text-white"
                 title="Add to Cart"
               >
                 <ShoppingCart className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 mr-1 opacity-90 hidden xs:inline" />
@@ -173,7 +173,7 @@ export default function ProductCard({
               <button
                 type="button"
                 onClick={handleBuyNowClick}
-                className="py-1.5 sm:py-2.5 px-1 sm:px-2 rounded-lg sm:rounded-xl text-[10px] sm:text-sm font-bold bg-[#FF9800] hover:bg-[#F57C00] text-white flex items-center justify-center transition-all duration-200 cursor-pointer shadow-xs active:scale-95 truncate"
+                className="py-1.5 sm:py-2 px-1 sm:px-2 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold bg-[#FF9800] hover:bg-[#F57C00] text-white flex items-center justify-center transition-all duration-200 cursor-pointer shadow-xs active:scale-95 truncate"
               >
                 Buy Now
               </button>
@@ -202,7 +202,7 @@ export default function ProductCard({
               fill
               unoptimized
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-              className="object-contain object-center group-hover:scale-106 transition-transform duration-500 ease-out"
+              className="object-cover object-center group-hover:scale-106 transition-transform duration-500 ease-out w-full h-full"
             />
           </div>
 
@@ -236,7 +236,7 @@ export default function ProductCard({
         </Link>
 
         {/* Product Details */}
-        <div className="p-3 sm:p-4 pb-2 sm:pb-3 space-y-1.5 sm:space-y-2">
+        <div className="px-2.5 sm:px-3.5 py-1.5 sm:py-2.5 space-y-1 sm:space-y-1.5">
           {/* Rating Row */}
           <div className="flex items-center gap-1 font-bold text-gray-700">
             <div className="flex text-amber-400">
@@ -259,7 +259,7 @@ export default function ProductCard({
           {/* Product Name */}
           <Link href={`/product/${product.id}`} className="block">
             <h3 
-              className="text-xs sm:text-sm font-bold text-[#0D1B2A] line-clamp-2 leading-snug group-hover:text-amber-600 transition-colors min-h-[2.5rem] sm:min-h-[2.75rem] cursor-pointer"
+              className="text-xs sm:text-sm font-bold text-[#0D1B2A] line-clamp-2 leading-snug group-hover:text-amber-600 transition-colors min-h-[2rem] sm:min-h-[2.3rem] cursor-pointer"
             >
               {product.name}
             </h3>
@@ -295,12 +295,12 @@ export default function ProductCard({
       </div>
 
       {/* Modern Action Buttons: Add to Cart & Buy Now */}
-      <div className="p-2.5 sm:p-4 pt-1 sm:pt-1.5 grid grid-cols-2 gap-1.5 sm:gap-2">
+      <div className="px-2.5 sm:px-3.5 pb-2.5 sm:pb-3 pt-0.5 sm:pt-1 grid grid-cols-2 gap-1.5 sm:gap-2">
         {/* Add to Cart Button */}
         <button
           type="button"
           onClick={handleAddClick}
-          className="py-2 sm:py-2.5 px-1.5 sm:px-2 rounded-xl text-[10px] sm:text-xs font-bold flex items-center justify-center gap-1 sm:gap-1.5 transition-all duration-200 cursor-pointer shadow-xs active:scale-95 bg-[#0D1B2A] hover:bg-black text-white hover:shadow-md hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-[#0D1B2A]"
+          className="py-1.5 sm:py-2 px-1.5 sm:px-2 rounded-xl text-[10px] sm:text-xs font-bold flex items-center justify-center gap-1 sm:gap-1.5 transition-all duration-200 cursor-pointer shadow-xs active:scale-95 bg-[#0D1B2A] hover:bg-black text-white hover:shadow-md hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-[#0D1B2A]"
           title="Add to Cart"
         >
           <ShoppingCart className="w-3.5 h-3.5 shrink-0 hidden xs:inline opacity-90" />
@@ -311,7 +311,7 @@ export default function ProductCard({
         <button
           type="button"
           onClick={handleBuyNowClick}
-          className="py-2 sm:py-2.5 px-2 rounded-xl text-[10px] sm:text-xs font-black text-white bg-[#FF9800] hover:bg-[#F57C00] flex items-center justify-center shadow-sm shadow-orange-500/25 hover:shadow-lg hover:shadow-orange-500/35 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer active:scale-95 focus-visible:outline-2 focus-visible:outline-[#FF9800]"
+          className="py-1.5 sm:py-2 px-2 rounded-xl text-[10px] sm:text-xs font-black text-white bg-[#FF9800] hover:bg-[#F57C00] flex items-center justify-center shadow-sm shadow-orange-500/25 hover:shadow-lg hover:shadow-orange-500/35 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer active:scale-95 focus-visible:outline-2 focus-visible:outline-[#FF9800]"
           title="Instant 1-Step Checkout"
         >
           <span className="truncate">Buy Now</span>
