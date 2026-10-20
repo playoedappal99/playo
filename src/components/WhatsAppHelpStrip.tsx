@@ -25,7 +25,7 @@ export default function WhatsAppHelpStrip() {
 
           {/* Right Button */}
           <a
-            href="https://wa.me/919072345678?text=Hi%20Playo%20Edappal,%20I%20need%20help%20with%20toys%20and%20ride-ons"
+            href="https://wa.me/919605973308?text=Hi%20Playo%20Edappal,%20I%20need%20help%20with%20toys%20and%20ride-ons"
             target="_blank"
             rel="noreferrer"
             className="w-full sm:w-auto px-6 py-2.5 sm:py-3 rounded-lg font-bold text-xs sm:text-sm text-white bg-[#16a34a] hover:bg-[#15803d] flex items-center justify-center gap-2 transition-all hover:scale-105 active:scale-95 shadow-sm"

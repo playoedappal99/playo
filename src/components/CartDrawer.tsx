@@ -247,7 +247,7 @@ export default function CartDrawer({
 
               {/* Direct WhatsApp Checkout */}
               <a
-                href={`https://wa.me/919072345678?text=${whatsappMessage}`}
+                href={`https://wa.me/919605973308?text=${whatsappMessage}`}
                 target="_blank"
                 rel="noreferrer"
                 className="w-full py-2.5 px-4 rounded-2xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer border border-emerald-200"

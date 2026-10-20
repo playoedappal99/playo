@@ -17,6 +17,7 @@ import {
   CheckCircle2,
   AlertCircle,
   Flame,
+  Star,
 } from "lucide-react";
 import { ProductItem, CategoryItem } from "@/data/store-data";
 import Navbar from "@/components/Navbar";
@@ -25,6 +26,7 @@ import AdminAuthScreen from "@/components/AdminAuthScreen";
 
 export type AdminTab =
   | "Inventory"
+  | "Best Toys"
   | "Orders"
   | "Category"
   | "Notifications"
@@ -33,6 +35,7 @@ export type AdminTab =
 
 const TABS: AdminTab[] = [
   "Inventory",
+  "Best Toys",
   "Orders",
   "Category",
   "Notifications",
@@ -162,6 +165,12 @@ function AdminContent() {
   const [selectedCategory, setSelectedCategory] = useState("ALL");
   const [selectedStockStatus, setSelectedStockStatus] = useState("ALL");
   const [isProductsLoading, setIsProductsLoading] = useState(true);
+
+  // Best Toys state (Home page showcase)
+  const [bestToysSearch, setBestToysSearch] = useState("");
+  const [bestToysCategory, setBestToysCategory] = useState("ALL");
+  const [bestToysFilter, setBestToysFilter] = useState<"ALL" | "SELECTED" | "UNSELECTED">("ALL");
+  const [updatingBestToyId, setUpdatingBestToyId] = useState<string | null>(null);
 
   // Orders State (from MongoDB)
   const [orders, setOrders] = useState<AdminOrder[]>([]);
@@ -513,6 +522,87 @@ function AdminContent() {
       return true;
     });
   }, [products, inventorySearch, selectedCategory, selectedStockStatus]);
+
+  // Filter products for Best Toys tab
+  const filteredBestToys = useMemo(() => {
+    return products.filter((p) => {
+      if (bestToysFilter === "SELECTED" && !p.isBestToy) return false;
+      if (bestToysFilter === "UNSELECTED" && p.isBestToy) return false;
+
+      if (bestToysCategory !== "ALL") {
+        if (p.categorySlug !== bestToysCategory && p.category !== bestToysCategory) {
+          return false;
+        }
+      }
+
+      if (bestToysSearch.trim()) {
+        const q = bestToysSearch.toLowerCase().trim();
+        const matchesName = p.name.toLowerCase().includes(q);
+        const matchesCategory = (p.category || "").toLowerCase().includes(q);
+        const matchesBrand = (p.brand || "").toLowerCase().includes(q);
+        const matchesTag = (p.tag || "").toLowerCase().includes(q);
+        return matchesName || matchesCategory || matchesBrand || matchesTag;
+      }
+      return true;
+    });
+  }, [products, bestToysSearch, bestToysCategory, bestToysFilter]);
+
+  const bestToysCount = useMemo(() => {
+    return products.filter((p) => Boolean(p.isBestToy)).length;
+  }, [products]);
+
+  // Handle Best Toy Toggle Checkbox
+  const handleToggleBestToy = async (product: AdminProduct) => {
+    const productId = product.id || String((product as any)._id);
+    const newVal = !Boolean(product.isBestToy);
+
+    // Optimistically update products state
+    setProducts((prev) =>
+      prev.map((p) => {
+        if (p.id === productId || (p as any)._id === productId) {
+          return { ...p, isBestToy: newVal };
+        }
+        return p;
+      })
+    );
+
+    setUpdatingBestToyId(productId);
+
+    try {
+      const res = await fetch(`/api/products/${encodeURIComponent(productId)}`, {
+        method: "PATCH",
+        headers: adminHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({ isBestToy: newVal }),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        // Revert on failure
+        setProducts((prev) =>
+          prev.map((p) => {
+            if (p.id === productId || (p as any)._id === productId) {
+              return { ...p, isBestToy: !newVal };
+            }
+            return p;
+          })
+        );
+        alert(data.error || "Failed to update Best Toys status in database.");
+      }
+    } catch (err: any) {
+      // Revert on error
+      setProducts((prev) =>
+        prev.map((p) => {
+          if (p.id === productId || (p as any)._id === productId) {
+            return { ...p, isBestToy: !newVal };
+          }
+          return p;
+        })
+      );
+      console.error("Error updating best toy:", err);
+      alert("Network error: Could not update Best Toys status.");
+    } finally {
+      setUpdatingBestToyId(null);
+    }
+  };
 
   // Handle Delete Product
   const handleDeleteProduct = async (productId: string, productName: string, mongoId?: string) => {
@@ -1149,6 +1239,254 @@ function AdminContent() {
                           </td>
                         </tr>
                       ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ========================================================
+            TAB: BEST TOYS (HOME PAGE SHOWCASE SELECTION)
+           ======================================================== */}
+        {activeTab === "Best Toys" && (
+          <div className="space-y-5 animate-in fade-in duration-200">
+            {/* Header Card */}
+            <div className="bg-white rounded-2xl p-5 border border-sky-100/70 shadow-[0_2px_12px_rgba(2,132,199,0.03)] flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <h3 className="font-extrabold text-base sm:text-lg text-slate-800 flex items-center gap-2">
+                  <Star className="w-5 h-5 text-amber-500 fill-amber-400" />
+                  <span>Best Toys — Home Page Showcase</span>
+                </h3>
+                <p className="text-xs text-slate-500 mt-1 max-w-2xl leading-relaxed">
+                  Select which toys from your inventory appear on the Home Page under the <strong>&quot;Loved by little drivers&quot;</strong> section. Check the box to feature a product on the homepage.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2.5 self-start md:self-auto shrink-0">
+                <span className="px-3.5 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 font-extrabold text-xs flex items-center gap-1.5 shadow-2xs">
+                  <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
+                  <span>{bestToysCount} of {products.length} Selected for Home</span>
+                </span>
+                <Link
+                  href="/#products"
+                  target="_blank"
+                  className="px-3 py-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 font-bold text-xs flex items-center gap-1 transition-colors"
+                  title="Preview Home Page"
+                >
+                  <span>Preview</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+            </div>
+
+            {/* Filter Bar */}
+            <div className="bg-white rounded-2xl p-4 sm:p-5 border border-sky-100/60 shadow-[0_2px_12px_rgba(2,132,199,0.03)] flex flex-col md:flex-row md:items-center justify-between gap-3.5">
+              <div className="relative w-full md:w-80">
+                <Search className="w-4 h-4 text-[#0284C7] absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Search toys to feature on homepage..."
+                  value={bestToysSearch}
+                  onChange={(e) => setBestToysSearch(e.target.value)}
+                  className="w-full pl-10 pr-3.5 py-2 text-xs sm:text-sm rounded-xl border border-slate-200 bg-white placeholder-slate-400 focus:border-[#0284C7] focus:ring-2 focus:ring-sky-100 outline-none transition-all"
+                />
+              </div>
+
+              <div className="flex items-center gap-2.5 flex-wrap">
+                {/* Status Filter */}
+                <div className="flex rounded-xl bg-slate-100 p-0.5 border border-slate-200/80">
+                  <button
+                    type="button"
+                    onClick={() => setBestToysFilter("ALL")}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      bestToysFilter === "ALL"
+                        ? "bg-white text-slate-900 shadow-2xs"
+                        : "text-slate-500 hover:text-slate-800"
+                    }`}
+                  >
+                    All ({products.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBestToysFilter("SELECTED")}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                      bestToysFilter === "SELECTED"
+                        ? "bg-amber-400 text-slate-900 shadow-2xs font-extrabold"
+                        : "text-slate-500 hover:text-slate-800"
+                    }`}
+                  >
+                    <span>⭐ Selected</span>
+                    <span>({bestToysCount})</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBestToysFilter("UNSELECTED")}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      bestToysFilter === "UNSELECTED"
+                        ? "bg-white text-slate-900 shadow-2xs"
+                        : "text-slate-500 hover:text-slate-800"
+                    }`}
+                  >
+                    Unselected ({products.length - bestToysCount})
+                  </button>
+                </div>
+
+                {/* Category Dropdown */}
+                <div className="relative">
+                  <select
+                    value={bestToysCategory}
+                    onChange={(e) => setBestToysCategory(e.target.value)}
+                    className="px-3.5 py-2 pr-8 text-xs sm:text-sm font-semibold rounded-xl border border-slate-200 bg-white text-slate-700 focus:border-[#0284C7] focus:ring-2 focus:ring-sky-100 outline-none transition-all appearance-none cursor-pointer"
+                  >
+                    <option value="ALL">All Categories</option>
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.name}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="w-4 h-4 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
+              </div>
+
+              <div className="self-end md:self-auto">
+                <span className="px-3 py-1 rounded-full bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-600">
+                  Showing {filteredBestToys.length} items
+                </span>
+              </div>
+            </div>
+
+            {/* Best Toys Inventory Table with Checkbox Column */}
+            <div className="bg-white rounded-2xl border border-sky-100/70 shadow-[0_2px_14px_rgba(2,132,199,0.04)] overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs sm:text-sm">
+                  <thead className="bg-[#EBF5FB] border-b border-sky-100/90 text-slate-800 font-extrabold">
+                    <tr>
+                      <th className="py-3.5 px-5 font-bold w-44">Best Toys Check</th>
+                      <th className="py-3.5 px-5 font-bold">Product Name</th>
+                      <th className="py-3.5 px-5 font-bold">Brand &amp; Scale</th>
+                      <th className="py-3.5 px-5 font-bold">Category</th>
+                      <th className="py-3.5 px-5 font-bold">Price (₹)</th>
+                      <th className="py-3.5 px-5 font-bold">Stock Status</th>
+                      <th className="py-3.5 px-5 font-bold text-right">Preview</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+                    {isProductsLoading ? (
+                      <tr>
+                        <td colSpan={7} className="py-12 text-center text-slate-400">
+                          <div className="w-6 h-6 border-2 border-sky-600 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                          <p>Loading inventory from database...</p>
+                        </td>
+                      </tr>
+                    ) : filteredBestToys.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="py-12 text-center text-slate-400">
+                          <Package className="w-8 h-8 mx-auto mb-2 opacity-30 text-slate-400" />
+                          <p className="font-bold text-slate-700">No products match your filter</p>
+                          <p className="text-xs text-slate-400 mt-0.5">Try clearing the search or category filter.</p>
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredBestToys.map((p) => {
+                        const isSelected = Boolean(p.isBestToy);
+                        const isUpdating = updatingBestToyId === (p.id || String((p as any)._id));
+
+                        return (
+                          <tr
+                            key={p.id || String((p as any)._id)}
+                            className={`transition-colors ${
+                              isSelected
+                                ? "bg-amber-50/40 hover:bg-amber-50/70"
+                                : "hover:bg-slate-50/60"
+                            }`}
+                          >
+                            {/* Best Toys Checkbox Column */}
+                            <td className="py-4 px-5">
+                              <label
+                                className={`inline-flex items-center gap-2.5 px-3 py-1.5 rounded-xl border cursor-pointer select-none transition-all ${
+                                  isSelected
+                                    ? "bg-amber-400/90 hover:bg-amber-400 border-amber-500/80 text-slate-950 font-black shadow-xs"
+                                    : "bg-white hover:bg-slate-50 border-slate-300 text-slate-600 font-semibold"
+                                } ${isUpdating ? "opacity-60 pointer-events-none" : ""}`}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={() => handleToggleBestToy(p)}
+                                  className="w-4 h-4 rounded text-amber-500 focus:ring-amber-400 accent-amber-500 cursor-pointer"
+                                />
+                                <span className="text-xs">
+                                  {isSelected ? "⭐ Best Toy" : "Feature"}
+                                </span>
+                              </label>
+                            </td>
+
+                            {/* Product Info */}
+                            <td className="py-4 px-5">
+                              <div className="flex items-center gap-3">
+                                <div className="relative w-12 h-12 bg-slate-50 rounded-xl overflow-hidden shrink-0 border border-slate-100 flex items-center justify-center p-1">
+                                  <Image
+                                    src={p.imageUrl || "/images/catalog/porsche-drift-rc.jpg"}
+                                    alt={p.name}
+                                    fill
+                                    className="object-contain"
+                                  />
+                                </div>
+                                <div className="min-w-0 max-w-xs">
+                                  <p className="font-bold text-slate-900 truncate">{p.name}</p>
+                                  <p className="text-[11px] text-slate-400 truncate">ID: {p.id}</p>
+                                </div>
+                              </div>
+                            </td>
+
+                            {/* Brand & Scale */}
+                            <td className="py-4 px-5 text-slate-600">
+                              <p className="font-semibold">{p.brand || "—"}</p>
+                              {p.scale && <p className="text-[11px] text-slate-400">{p.scale}</p>}
+                            </td>
+
+                            {/* Category */}
+                            <td className="py-4 px-5">
+                              <span className="px-2.5 py-1 bg-sky-50 text-sky-800 text-xs font-semibold rounded-lg border border-sky-100">
+                                {p.category || p.categorySlug || "Toys"}
+                              </span>
+                            </td>
+
+                            {/* Price */}
+                            <td className="py-4 px-5 font-bold text-slate-900">
+                              ₹{p.price.toLocaleString("en-IN")}
+                            </td>
+
+                            {/* Stock Status */}
+                            <td className="py-4 px-5">
+                              {p.stockCount > 0 ? (
+                                <span className="px-2 py-0.5 bg-emerald-50 text-emerald-800 text-[11px] font-bold rounded border border-emerald-200">
+                                  In Stock ({p.stockCount})
+                                </span>
+                              ) : (
+                                <span className="px-2 py-0.5 bg-rose-50 text-rose-800 text-[11px] font-bold rounded border border-rose-200">
+                                  Out of Stock
+                                </span>
+                              )}
+                            </td>
+
+                            {/* Preview in Store */}
+                            <td className="py-4 px-5 text-right">
+                              <Link
+                                href={`/product/${p.id}`}
+                                target="_blank"
+                                className="p-1.5 text-slate-400 hover:text-sky-600 hover:bg-sky-50 rounded-lg inline-flex items-center transition-colors"
+                                title="View in Store"
+                              >
+                                <ExternalLink className="w-4 h-4" />
+                              </Link>
+                            </td>
+                          </tr>
+                        );
+                      })
                     )}
                   </tbody>
                 </table>

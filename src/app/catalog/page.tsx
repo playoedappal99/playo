@@ -3,12 +3,24 @@ import CatalogClient from "@/components/CatalogClient";
 import { ProductItem, CategoryItem } from "@/data/store-data";
 import { Suspense } from "react";
 import { Metadata } from "next";
+import { BUSINESS_INFO, getBreadcrumbSchema } from "@/lib/business-info";
 
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "All Products & Catalog | Playo Edappal - Premium Kids Ride-Ons & Toys",
-  description: "Browse all premium kids electric ride-on cars, jeeps, bikes, supercars, and toys in Edappal with fast Kerala delivery and warranty.",
+  title: "Toy Catalog & Kids' Ride-Ons | PLAYO Edappal, Malappuram",
+  description:
+    "Explore kids' electric cars, 4x4 ride-on jeeps, mini bikes, light-up scooters, RC cars, and diecast models at PLAYO Edappal. In-store test drives & Kerala delivery.",
+  alternates: {
+    canonical: `${BUSINESS_INFO.url}/catalog`,
+  },
+  openGraph: {
+    title: "Toy Catalog & Kids' Ride-Ons | PLAYO Edappal",
+    description:
+      "Explore kids' electric cars, 4x4 ride-on jeeps, mini bikes, scooters, and toys at PLAYO Edappal near Nesto Hypermarket.",
+    url: `${BUSINESS_INFO.url}/catalog`,
+    type: "website",
+  },
 };
 
 export default async function CatalogPage() {

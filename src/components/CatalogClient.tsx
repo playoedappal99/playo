@@ -18,8 +18,6 @@ import {
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import TrustBadges from "@/components/TrustBadges";
-import WhatsAppHelpStrip from "@/components/WhatsAppHelpStrip";
 import CartDrawer from "@/components/CartDrawer";
 import ProductCard from "@/components/ProductCard";
 import BuyNowModal from "@/components/BuyNowModal";
@@ -540,12 +538,50 @@ export default function CatalogClient({
           {appliedFilters.category !== "all" && (
             <>
               <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
-              <span className="text-sky-600 font-bold capitalize">
+              <span className="text-[#FF9800] font-bold capitalize">
                 {dynamicCategories.find((c) => c.value === appliedFilters.category)?.label || appliedFilters.category}
               </span>
             </>
           )}
         </nav>
+
+        {/* Page Heading & SEO Category Banner */}
+        <div className="mb-6 bg-white p-5 sm:p-6 rounded-2xl border border-gray-200/80 shadow-2xs">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-[#0D1B2A] tracking-tight">
+            {appliedFilters.category === "ride-ons"
+              ? "Kids' Electric Ride-On Cars & 4x4 Jeeps in Edappal"
+              : appliedFilters.category === "mini-bikes"
+              ? "Kids' Mini Bikes & Balance Dirt Bikes in Edappal"
+              : appliedFilters.category === "scooters"
+              ? "Kids' Light-Up LED 3-Wheel Scooters in Edappal"
+              : appliedFilters.category === "rc-cars"
+              ? "High-Speed Remote Control (RC) Drift & Stunt Cars"
+              : appliedFilters.category === "diecast"
+              ? "Precision Diecast Metal Supercars & Scale Models"
+              : appliedFilters.category === "soft-toys"
+              ? "Plush Soft Toys & Birthday Gift Hampers in Edappal"
+              : appliedFilters.category === "learning"
+              ? "Creative & Learning Toys for Kids in Edappal"
+              : "Kids' Toys & Ride-On Vehicles Catalog — PLAYO Edappal"}
+          </h1>
+          <p className="text-xs sm:text-sm text-gray-600 mt-1.5 max-w-3xl leading-relaxed">
+            {appliedFilters.category === "ride-ons"
+              ? "Discover rechargeable 12V and 24V battery-operated 4x4 off-road jeeps and licensed luxury cars. Complete with parental 2.4GHz remote control, soft start, and pre-assembly at PLAYO showroom near Nesto Hypermarket, Edappal."
+              : appliedFilters.category === "mini-bikes"
+              ? "Explore ultra-light magnesium alloy and steel frame kids' balance mini bikes and trail dirt bikes designed for early motor balance and cycling confidence."
+              : appliedFilters.category === "scooters"
+              ? "Shop foldable kick scooters featuring kinetic glowing LED wheels that require no batteries, lean-to-steer stability mechanisms, and adjustable height handlebars."
+              : appliedFilters.category === "rc-cars"
+              ? "High-performance 4WD RC drift cars with interchangeable racing tires, 2.4GHz anti-interference controllers, smoke effects, and all-terrain stunt vehicles."
+              : appliedFilters.category === "diecast"
+              ? "Collectible 1:24 and 1:18 scale metal vehicles featuring authentic opening doors, detailed engine bays, pullback action, and realistic lighting."
+              : appliedFilters.category === "soft-toys"
+              ? "Giant cuddly teddy bears and plush characters crafted from ultra-soft, child-safe materials for birthdays and celebration gifts."
+              : appliedFilters.category === "learning"
+              ? "Engaging educational activity sets and building blocks designed to inspire young imagination and hands-on discovery."
+              : "Browse certified children's electric cars, battery 4x4 jeeps, balance bikes, LED kick scooters, RC cars, and diecast models available at our Edappal showroom near Nesto Hypermarket."}
+          </p>
+        </div>
 
         {/* Top Control Bar: Search, Mobile Filter Toggle, Sort */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-8">
@@ -844,8 +880,6 @@ export default function CatalogClient({
         onRemoveItem={removeFromCart}
       />
 
-      <TrustBadges />
-      <WhatsAppHelpStrip />
       <Footer categories={dbCategories} />
     </div>
   );

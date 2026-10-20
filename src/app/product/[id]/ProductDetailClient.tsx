@@ -12,10 +12,10 @@ import {
   Maximize2,
   X,
   AlertCircle,
+  MessageCircle,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import WhatsAppHelpStrip from "@/components/WhatsAppHelpStrip";
 import CartDrawer from "@/components/CartDrawer";
 import ProductCard from "@/components/ProductCard";
 import { ProductItem } from "@/data/store-data";
@@ -503,6 +503,19 @@ export default function ProductDetailClient({
                 <span>{isOutOfStock ? "Out of Stock" : "Buy it now"}</span>
               </button>
 
+              {/* WhatsApp Showroom Enquiry */}
+              <a
+                href={`https://wa.me/919605973308?text=${encodeURIComponent(
+                  `Hi Playo Edappal! I am interested in "${product.name}" (Price: ₹${product.price}). Is it currently available at your Edappal showroom?`
+                )}`}
+                target="_blank"
+                rel="noreferrer"
+                className="w-full h-11 bg-[#16A34A] hover:bg-[#15803d] text-white font-semibold text-sm rounded-lg flex items-center justify-center gap-2 transition-all cursor-pointer mt-2.5 shadow-xs"
+              >
+                <MessageCircle className="w-4 h-4 fill-current" />
+                <span>Ask Showroom on WhatsApp</span>
+              </a>
+
               {/* Features Section */}
               <div className="mt-8">
                 <h3 className="font-bold text-sm sm:text-base text-slate-900 mb-3">
@@ -594,8 +607,6 @@ export default function ProductDetailClient({
             </div>
           </section>
         )}
-
-        <WhatsAppHelpStrip />
       </main>
 
       {/* Footer */}

@@ -5,7 +5,6 @@ import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CheckoutSection from "@/components/CheckoutSection";
-import TrustBadges from "@/components/TrustBadges";
 import { useCart } from "@/data/cart-store";
 import { ArrowLeft, ShieldCheck } from "lucide-react";
 
@@ -52,11 +51,6 @@ export default function CheckoutPage() {
             product={checkoutProduct}
             isModal={false}
           />
-        </div>
-
-        {/* Trust Badges below */}
-        <div className="mt-10">
-          <TrustBadges />
         </div>
       </main>
 

@@ -246,6 +246,10 @@ export async function PUT(
       updatedAt: new Date(),
     };
 
+    if (typeof body.isBestToy === "boolean") {
+      updateDoc.isBestToy = body.isBestToy;
+    }
+
     if (Array.isArray(colorMappings)) {
       updateDoc.colorMappings = colorMappings;
     }
@@ -273,6 +277,73 @@ export async function PUT(
     });
   } catch (error: any) {
     console.error("Error updating product:", error);
+    return NextResponse.json(
+      { success: false, error: error.message },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PATCH(
+  req: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  try {
+    if (!validateAdminAuth(req)) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized: Admin authorization key required." },
+        { status: 401 }
+      );
+    }
+
+    const { id } = await context.params;
+    if (!id) {
+      return NextResponse.json(
+        { success: false, error: "Product ID required" },
+        { status: 400 }
+      );
+    }
+
+    const body = await req.json();
+    const updateDoc: any = { updatedAt: new Date() };
+
+    if (typeof body.isBestToy === "boolean") {
+      updateDoc.isBestToy = body.isBestToy;
+    }
+
+    if (typeof body.stockCount === "number") {
+      updateDoc.stockCount = body.stockCount;
+      updateDoc.inStock = body.stockCount > 0;
+    }
+
+    if (typeof body.tag === "string") {
+      updateDoc.tag = body.tag.trim();
+    }
+
+    const db = await getDatabase();
+    let query: any = { id };
+    if (ObjectId.isValid(id)) {
+      query = { $or: [{ id }, { _id: new ObjectId(id) }] };
+    }
+
+    const result = await db.collection("products").updateOne(query, { $set: updateDoc });
+
+    if (result.matchedCount === 0) {
+      return NextResponse.json(
+        { success: false, error: "Product not found" },
+        { status: 404 }
+      );
+    }
+
+    clearProductsCache();
+
+    return NextResponse.json({
+      success: true,
+      message: "Product updated successfully",
+      isBestToy: body.isBestToy,
+    });
+  } catch (error: any) {
+    console.error("Error patching product:", error);
     return NextResponse.json(
       { success: false, error: error.message },
       { status: 500 }

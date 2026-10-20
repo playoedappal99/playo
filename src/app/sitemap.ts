@@ -1,10 +1,11 @@
 import { MetadataRoute } from "next";
 import { getDatabase } from "@/lib/mongodb";
+import { BUSINESS_INFO } from "@/lib/business-info";
 
 export const dynamic = "force-dynamic";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = "https://playoedappal.in";
+  const baseUrl = BUSINESS_INFO.url;
 
   const staticRoutes: MetadataRoute.Sitemap = [
     {
@@ -18,6 +19,36 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: new Date(),
       changeFrequency: "daily",
       priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/contact`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/toy-shop-edappal`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/toy-shop-near-ponnani`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/toy-shop-near-kuttippuram`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/toy-shop-near-valanchery`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.8,
     },
   ];
 
@@ -36,11 +67,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       url: `${baseUrl}/catalog?category=${c.slug}`,
       lastModified: new Date(),
       changeFrequency: "weekly",
-      priority: 0.7,
+      priority: 0.8,
     }));
 
-    return [...staticRoutes, ...productRoutes, ...categoryRoutes];
+    return [...staticRoutes, ...categoryRoutes, ...productRoutes];
   } catch {
     return staticRoutes;
   }
 }
+

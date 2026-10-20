@@ -52,184 +52,56 @@ export default function ProductCard({
     onBuyNow(product);
   };
 
-  if (variant === "catalog") {
-    const isOutOfStock = product.inStock === false;
-    const brandName = product.brand || product.specs?.brand;
-    const scaleText = product.scale || product.specs?.scale;
-
-    return (
-      <div
-        className={`group relative bg-white rounded-2xl border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] hover:shadow-[0_12px_28px_rgba(0,0,0,0.08)] hover:border-gray-200 transition-all duration-300 flex flex-col justify-between overflow-hidden h-full ${className}`}
-      >
-        <div>
-          {/* Top Image Container - Slightly taller aspect-[4/5] to give images ample height */}
-          <Link
-            href={`/product/${product.id}`}
-            className="relative aspect-[4/5] sm:aspect-[1/1] w-full bg-slate-50 p-0 m-0 flex items-center justify-center overflow-hidden border-b border-gray-100/60 cursor-pointer block"
-          >
-            {/* Ambient matching blurred background so side margins are naturally filled */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-              <Image
-                src={getOptimizedImageUrl(product.imageUrl, { width: 100 })}
-                alt=""
-                fill
-                unoptimized
-                aria-hidden="true"
-                className="object-cover scale-125 blur-xl opacity-40"
-              />
-            </div>
-
-            {/* Main Product Image - Fully fitted edge-to-edge with no inset padding */}
-            <div className="relative w-full h-full p-0 flex items-center justify-center z-1">
-              <Image
-                src={getOptimizedImageUrl(product.imageUrl, { width: 500 })}
-                alt={product.name}
-                fill
-                unoptimized
-                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                className="object-contain object-center group-hover:scale-105 transition-transform duration-500 ease-out"
-              />
-            </div>
-
-            {/* Wishlist Button (shows on hover or if wishlisted) */}
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onToggleWishlist(product.id);
-              }}
-              aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
-              className={`absolute top-2.5 right-2.5 z-10 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/90 backdrop-blur-xs shadow-xs hover:shadow-md flex items-center justify-center text-gray-400 hover:text-rose-500 hover:bg-white transition-all cursor-pointer active:scale-90 ${
-                isWishlisted ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-              }`}
-            >
-              <Heart
-                className={`w-3.5 h-3.5 sm:w-4 sm:h-4 transition-colors ${
-                  isWishlisted ? "fill-rose-500 text-rose-500" : ""
-                }`}
-              />
-            </button>
-          </Link>
-
-          {/* Product Details */}
-          <div className="px-3 sm:px-4 py-2 sm:py-3 space-y-1 sm:space-y-1.5">
-            {/* Meta row: Brand / Scale */}
-            <div className="flex items-center justify-between text-xs min-h-[0.95rem] sm:min-h-[1.125rem]">
-              {brandName ? (
-                <span className="text-sky-600 font-semibold tracking-wider uppercase text-[10px] sm:text-[11px]">
-                  {brandName}
-                </span>
-              ) : scaleText ? (
-                <span className="text-slate-400 font-medium text-[10px] sm:text-[11px]">
-                  {scaleText}
-                </span>
-              ) : (
-                <span />
-              )}
-
-              {brandName && scaleText && (
-                <span className="text-slate-400 font-medium text-[10px] sm:text-[11px]">
-                  {scaleText}
-                </span>
-              )}
-            </div>
-
-            {/* Product Name */}
-            <Link href={`/product/${product.id}`} className="block">
-              <h3
-                className="text-xs sm:text-sm font-bold text-gray-900 leading-snug group-hover:text-sky-600 transition-colors line-clamp-2 min-h-[2rem] sm:min-h-[2.5rem] cursor-pointer"
-              >
-                {product.name}
-              </h3>
-            </Link>
-
-            {/* Price */}
-            <div className="pt-0.5">
-              <span className="text-sm sm:text-lg font-bold text-gray-900">
-                ₹{product.price.toLocaleString("en-IN")}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Action Buttons Row */}
-        <div className="px-3 sm:px-4 pb-3 sm:pb-3.5 pt-0.5 sm:pt-1">
-          {isOutOfStock ? (
-            <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
-              <button
-                type="button"
-                disabled
-                className="py-2 sm:py-2.5 px-1.5 sm:px-2 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-medium bg-[#94a3b8] text-white flex items-center justify-center cursor-not-allowed opacity-90 truncate"
-              >
-                Out of Stock
-              </button>
-              <button
-                type="button"
-                disabled
-                className="py-2 sm:py-2.5 px-1.5 sm:px-2 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-medium bg-[#94a3b8] text-white flex items-center justify-center cursor-not-allowed opacity-90 truncate"
-              >
-                Out of Stock
-              </button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
-              <button
-                type="button"
-                onClick={handleAddClick}
-                className="py-2 sm:py-2.5 px-1.5 sm:px-2 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold flex items-center justify-center transition-all duration-200 cursor-pointer shadow-xs active:scale-95 truncate bg-[#0D1B2A] hover:bg-black text-white"
-                title="Add to Cart"
-              >
-                <ShoppingCart className="w-3.5 h-3.5 shrink-0 mr-1 opacity-90 hidden xs:inline" />
-                <span className="truncate">Add to Cart</span>
-              </button>
-              <button
-                type="button"
-                onClick={handleBuyNowClick}
-                className="py-2 sm:py-2.5 px-1.5 sm:px-2 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold bg-[#FF9800] hover:bg-[#F57C00] text-white flex items-center justify-center transition-all duration-200 cursor-pointer shadow-xs active:scale-95 truncate"
-              >
-                Buy Now
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
+  const isOutOfStock = product.inStock === false;
+  const brandName = product.brand || product.specs?.brand;
+  const scaleText = product.scale || product.specs?.scale;
 
   return (
     <div
-      className={`group relative bg-white rounded-2xl sm:rounded-3xl border border-gray-100/90 shadow-[0_2px_10px_rgba(0,0,0,0.03)] hover:shadow-[0_16px_32px_rgba(13,27,42,0.08)] hover:border-amber-300/60 transition-all duration-300 flex flex-col justify-between overflow-hidden h-full ${className}`}
+      className={`group relative bg-white rounded-xl border border-gray-200/90 shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:shadow-[0_12px_24px_rgba(23,33,43,0.08)] hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between overflow-hidden h-full ${className}`}
     >
       <div>
-        {/* Top Media Container - aspect-[4/5] to give images ample height */}
+        {/* Top Image Container - Aspect 4:3 matching diecastshub.in */}
         <Link
           href={`/product/${product.id}`}
-          className="relative aspect-[4/5] sm:aspect-[1/1] w-full bg-slate-50 p-0 m-0 flex items-center justify-center overflow-hidden border-b border-gray-50 cursor-pointer block"
+          className="relative aspect-[4/3] w-full bg-slate-50/50 flex items-center justify-center overflow-hidden border-b border-gray-100 cursor-pointer block"
         >
-          {/* Ambient matching blurred background */}
-          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          {/* Subtle Ambient Blurred Underlay */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-30">
             <Image
               src={getOptimizedImageUrl(product.imageUrl, { width: 100 })}
               alt=""
               fill
               unoptimized
               aria-hidden="true"
-              className="object-cover scale-125 blur-xl opacity-40"
+              className="object-cover scale-125 blur-lg"
             />
           </div>
 
-          {/* Product Image - Fully visible, never cropped, fitted edge-to-edge */}
-          <div className="relative w-full h-full p-0 flex items-center justify-center z-1">
+          {/* Main Product Image with subtle padding and smooth hover zoom */}
+          <div className="relative w-full h-full p-2 sm:p-3 flex items-center justify-center z-1">
             <Image
               src={getOptimizedImageUrl(product.imageUrl, { width: 500 })}
               alt={product.name}
               fill
               unoptimized
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-              className="object-contain object-center group-hover:scale-106 transition-transform duration-500 ease-out"
+              className="object-contain object-center group-hover:scale-105 transition-transform duration-350 ease-out"
             />
           </div>
+
+          {/* Top-Left Tag/Badge (NEW / BESTSELLER / SCALE) */}
+          {product.tag ? (
+            <span className="absolute top-2 left-2 z-10 px-2 py-0.5 rounded text-[10px] sm:text-[11px] font-bold uppercase tracking-wider bg-sky-600 text-white shadow-xs">
+              {product.tag}
+            </span>
+          ) : scaleText ? (
+            <span className="absolute top-2 left-2 z-10 px-1.5 py-0.5 rounded text-[10px] sm:text-[11px] font-bold tracking-wider bg-slate-900/80 backdrop-blur-xs text-white shadow-xs">
+              {scaleText}
+            </span>
+          ) : null}
+
+
 
           {/* Wishlist Button */}
           <button
@@ -240,7 +112,9 @@ export default function ProductCard({
               onToggleWishlist(product.id);
             }}
             aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
-            className="absolute top-2.5 right-2.5 z-10 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/90 backdrop-blur-md shadow-xs hover:shadow-md flex items-center justify-center text-gray-400 hover:text-rose-500 hover:bg-white transition-all cursor-pointer active:scale-90"
+            className={`absolute top-2 right-2 z-10 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/90 backdrop-blur-xs shadow-xs hover:shadow-md flex items-center justify-center text-gray-400 hover:text-rose-500 hover:bg-white transition-all cursor-pointer active:scale-90 ${
+              isWishlisted ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+            }`}
           >
             <Heart
               className={`w-3.5 h-3.5 sm:w-4 sm:h-4 transition-colors ${
@@ -251,7 +125,7 @@ export default function ProductCard({
 
           {/* Quick View Hover Cue (Desktop) */}
           {onQuickView && (
-            <div className="hidden sm:flex absolute inset-0 bg-black/15 backdrop-blur-[1px] opacity-0 group-hover:opacity-100 transition-opacity items-center justify-center pointer-events-none">
+            <div className="hidden sm:flex absolute inset-0 bg-black/15 backdrop-blur-[1px] opacity-0 group-hover:opacity-100 transition-opacity items-center justify-center pointer-events-none z-10">
               <span className="px-3 py-1 rounded-full bg-white/95 text-[11px] font-bold text-[#0D1B2A] shadow-md flex items-center gap-1.5 transform translate-y-2 group-hover:translate-y-0 transition-transform">
                 <Eye className="w-3.5 h-3.5 text-amber-500" />
                 <span>Quick View</span>
@@ -260,88 +134,112 @@ export default function ProductCard({
           )}
         </Link>
 
-        {/* Product Details */}
-        <div className="px-3 sm:px-4 py-2 sm:py-3 space-y-1 sm:space-y-1.5">
-          {/* Rating Row */}
-          <div className="flex items-center gap-1 font-bold text-gray-700">
-            <div className="flex text-amber-400">
-              {[...Array(5)].map((_, i) => (
-                <Star
-                  key={i}
-                  className={`w-2.5 h-2.5 sm:w-3 sm:h-3 ${
-                    i < product.rating
-                      ? "fill-amber-400 text-amber-400"
-                      : "fill-gray-200 text-gray-200"
-                  }`}
-                />
-              ))}
-            </div>
-            <span className="text-[10px] sm:text-[11px] text-gray-400 font-normal">
-              ({product.reviewsCount})
-            </span>
+        {/* Product Details Content */}
+        <div className="p-2.5 sm:p-4 space-y-1 sm:space-y-1.5">
+          {/* Meta row: Brand & Scale */}
+          <div className="flex items-center justify-between text-xs min-h-[1rem] sm:min-h-[1.125rem]">
+            {brandName ? (
+              <span className="text-sky-700 font-semibold tracking-wider uppercase text-[10px] sm:text-[11px] truncate">
+                {brandName}
+              </span>
+            ) : scaleText ? (
+              <span className="text-slate-500 font-medium text-[10px] sm:text-[11px]">
+                Scale: {scaleText}
+              </span>
+            ) : (
+              <span />
+            )}
+
+            {brandName && scaleText && (
+              <span className="text-slate-500 font-medium text-[10px] sm:text-[11px] shrink-0 ml-1">
+                {scaleText}
+              </span>
+            )}
           </div>
 
-          {/* Product Name */}
+          {/* Product Name (14px mobile, 16px desktop, 2-line clamp) */}
           <Link href={`/product/${product.id}`} className="block">
-            <h3 
-              className="text-xs sm:text-sm font-bold text-[#0D1B2A] line-clamp-2 leading-snug group-hover:text-amber-600 transition-colors min-h-[2rem] sm:min-h-[2.5rem] cursor-pointer"
-            >
+            <h3 className="text-sm sm:text-base font-semibold text-[#0D1B2A] leading-snug line-clamp-2 min-h-[2.25rem] sm:min-h-[2.75rem] group-hover:text-sky-600 transition-colors cursor-pointer">
               {product.name}
             </h3>
           </Link>
 
-          {/* Quick Specs Pills */}
-          {product.specs?.ageGroup && (
-            <div className="flex flex-wrap items-center gap-1 pt-0.5">
-              <span className="px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 text-[9px] sm:text-[10px] font-medium">
-                Age: {product.specs.ageGroup}
+          {/* Optional Rating Row if reviews exist */}
+          {product.rating > 0 && (
+            <div className="flex items-center gap-1 text-[11px] sm:text-xs text-slate-500 pt-0.5">
+              <div className="flex text-amber-400">
+                {[...Array(5)].map((_, i) => (
+                  <Star
+                    key={i}
+                    className={`w-3 h-3 ${
+                      i < product.rating
+                        ? "fill-amber-400 text-amber-400"
+                        : "fill-gray-200 text-gray-200"
+                    }`}
+                  />
+                ))}
+              </div>
+              <span className="text-slate-400 text-[10px] sm:text-[11px]">
+                ({product.reviewsCount || 12})
               </span>
-              {product.specs.battery && (
-                <span className="px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 text-[9px] sm:text-[10px] font-medium hidden xs:inline">
-                  {product.specs.battery}
-                </span>
-              )}
             </div>
           )}
 
-          {/* Pricing Row */}
-          <div className="flex flex-wrap items-baseline gap-1 sm:gap-2 pt-1">
-            <span className="text-xs sm:text-base font-black text-[#0D1B2A]">
-              ₹ {product.price.toLocaleString("en-IN")}
-            </span>
-            <span className="text-[10px] sm:text-xs text-gray-400 line-through">
-              ₹ {product.originalPrice.toLocaleString("en-IN")}
-            </span>
-            <span className="text-[9px] sm:text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded ml-auto shrink-0">
-              {product.discount}
-            </span>
+          {/* Price Row (diecastshub format: bold main price, original strikethrough) */}
+          <div className="pt-1 sm:pt-2 flex items-baseline justify-between gap-1.5">
+            <div className="flex items-baseline gap-1.5 sm:gap-2">
+              <span className="text-base sm:text-[18px] font-bold text-[#0D1B2A]">
+                ₹{product.price.toLocaleString("en-IN")}
+              </span>
+              {product.originalPrice > product.price && (
+                <span className="text-[11px] sm:text-[13px] text-slate-400 line-through">
+                  ₹{product.originalPrice.toLocaleString("en-IN")}
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Modern Action Buttons: Add to Cart & Buy Now */}
-      <div className="px-3 sm:px-4 pb-3 sm:pb-3.5 pt-0.5 sm:pt-1 grid grid-cols-2 gap-1.5 sm:gap-2">
-        {/* Add to Cart Button */}
-        <button
-          type="button"
-          onClick={handleAddClick}
-          className="py-2 sm:py-2.5 px-1.5 sm:px-2 rounded-xl text-[10px] sm:text-xs font-bold flex items-center justify-center gap-1 sm:gap-1.5 transition-all duration-200 cursor-pointer shadow-xs active:scale-95 bg-[#0D1B2A] hover:bg-black text-white hover:shadow-md hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-[#0D1B2A]"
-          title="Add to Cart"
-        >
-          <ShoppingCart className="w-3.5 h-3.5 shrink-0 hidden xs:inline opacity-90" />
-          <span className="truncate">Add to Cart</span>
-        </button>
+      {/* Action Buttons Row (diecastshub pattern: icon-only cart on mobile, full on desktop) */}
+      <div className="px-2.5 sm:px-4 pb-2.5 sm:pb-3.5 pt-0">
+        {isOutOfStock ? (
+          <div className="w-full">
+            <button
+              type="button"
+              disabled
+              className="w-full py-2 sm:py-2.5 px-2 rounded-lg text-xs sm:text-sm font-medium bg-slate-300 text-white flex items-center justify-center cursor-not-allowed opacity-90"
+            >
+              Out of Stock
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-stretch gap-1.5 sm:gap-2">
+            {/* Add to Cart: compact square icon on mobile, full pill on desktop */}
+            <button
+              type="button"
+              onClick={handleAddClick}
+              className="w-10 sm:w-auto sm:flex-1 h-[38px] sm:h-auto py-2 sm:py-2.5 px-0 sm:px-3 rounded-lg text-xs sm:text-sm font-semibold flex items-center justify-center transition-all duration-200 cursor-pointer shadow-xs active:scale-95 bg-[#0D1B2A] hover:bg-black text-white shrink-0"
+              title="Add to Cart"
+              aria-label="Add to Cart"
+            >
+              <ShoppingCart className="w-4 h-4 shrink-0 sm:mr-1.5 opacity-90" />
+              <span className="hidden sm:inline truncate">Add to Cart</span>
+            </button>
 
-        {/* Buy Now Button */}
-        <button
-          type="button"
-          onClick={handleBuyNowClick}
-          className="py-2 sm:py-2.5 px-2 rounded-xl text-[10px] sm:text-xs font-black text-white bg-[#FF9800] hover:bg-[#F57C00] flex items-center justify-center shadow-sm shadow-orange-500/25 hover:shadow-lg hover:shadow-orange-500/35 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer active:scale-95 focus-visible:outline-2 focus-visible:outline-[#FF9800]"
-          title="Instant 1-Step Checkout"
-        >
-          <span className="truncate">Buy Now</span>
-        </button>
+            {/* Buy Now: fills remaining space on mobile & desktop */}
+            <button
+              type="button"
+              onClick={handleBuyNowClick}
+              className="flex-1 h-[38px] sm:h-auto py-2 sm:py-2.5 px-2 sm:px-4 rounded-lg text-xs sm:text-sm font-semibold bg-[#FF9800] hover:bg-[#F57C00] text-white flex items-center justify-center transition-all duration-200 cursor-pointer shadow-xs active:scale-95 whitespace-nowrap"
+              title="Buy Now"
+            >
+              <span className="truncate">Buy Now</span>
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
 }
+

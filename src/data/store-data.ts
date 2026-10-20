@@ -63,6 +63,7 @@ export interface ProductItem {
   };
   inStock?: boolean;
   stockCount?: number;
+  isBestToy?: boolean;
 }
 
 export interface TestimonialItem {

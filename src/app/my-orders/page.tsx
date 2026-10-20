@@ -21,8 +21,6 @@ import {
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import TrustBadges from "@/components/TrustBadges";
-import WhatsAppHelpStrip from "@/components/WhatsAppHelpStrip";
 import CartDrawer from "@/components/CartDrawer";
 import { useCart } from "@/data/cart-store";
 
@@ -462,7 +460,7 @@ function MyOrdersContent() {
                           Shop Replacement Item
                         </Link>
                         <a
-                          href={`https://wa.me/919072345678?text=Hi%20Playo%20Edappal,%20I%20have%20a%20query%20about%20my%20cancelled%20order%20${currentOrder.id}`}
+                          href={`https://wa.me/919605973308?text=Hi%20Playo%20Edappal,%20I%20have%20a%20query%20about%20my%20cancelled%20order%20${currentOrder.id}`}
                           target="_blank"
                           rel="noreferrer"
                           className="text-xs font-semibold text-rose-800 hover:underline flex items-center gap-1"
@@ -570,7 +568,7 @@ function MyOrdersContent() {
 
                 <div className="flex items-center gap-2 self-start sm:self-auto">
                   <a
-                    href={`https://wa.me/919072345678?text=Hi%20Playo%20Edappal,%20tracking%20update%20for%20order%20${currentOrder.id}%20(Status:%20${currentOrder.status})`}
+                    href={`https://wa.me/919605973308?text=Hi%20Playo%20Edappal,%20tracking%20update%20for%20order%20${currentOrder.id}%20(Status:%20${currentOrder.status})`}
                     target="_blank"
                     rel="noreferrer"
                     className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 shrink-0"
@@ -714,8 +712,6 @@ function MyOrdersContent() {
         onRemoveItem={removeFromCart}
       />
 
-      <TrustBadges />
-      <WhatsAppHelpStrip />
       <Footer />
     </div>
   );
