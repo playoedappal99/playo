@@ -75,6 +75,7 @@ export async function getDatabase(dbName?: string): Promise<Db> {
           db.collection("categories").createIndex({ slug: 1 }, { unique: true }),
           db.collection("orders").createIndex({ id: 1 }, { unique: true }),
           db.collection("orders").createIndex({ createdAt: -1 }),
+          db.collection("orders").dropIndex("orderNumber_1").catch(() => {}),
           db.collection("carts").createIndex({ cartId: 1 }, { unique: true }),
         ]);
       } catch (e) {
