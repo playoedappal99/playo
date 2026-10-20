@@ -217,7 +217,13 @@ function AdminContent() {
   const fetchProducts = useCallback(async () => {
     try {
       setIsProductsLoading(true);
-      const res = await fetch("/api/products", { cache: "no-store" });
+      const res = await fetch(`/api/products?nocache=true&t=${Date.now()}`, {
+        cache: "no-store",
+        headers: adminHeaders({
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+        }),
+      });
       const data = await res.json();
       if (data.success && Array.isArray(data.products)) {
         setProducts(data.products);
@@ -509,10 +515,22 @@ function AdminContent() {
   }, [products, inventorySearch, selectedCategory, selectedStockStatus]);
 
   // Handle Delete Product
-  const handleDeleteProduct = async (productId: string, productName: string) => {
+  const handleDeleteProduct = async (productId: string, productName: string, mongoId?: string) => {
     if (confirm(`Are you sure you want to delete "${productName}" from inventory database?`)) {
+      // Optimistically remove from state immediately
+      const prevProducts = [...products];
+      setProducts((current) =>
+        current.filter(
+          (p) =>
+            p.id !== productId &&
+            (p as any)._id !== productId &&
+            (!mongoId || (p as any)._id !== mongoId)
+        )
+      );
+
       try {
-        const res = await fetch(`/api/products/${encodeURIComponent(productId)}`, {
+        const queryParam = mongoId ? `?mongoId=${encodeURIComponent(mongoId)}` : "";
+        const res = await fetch(`/api/products/${encodeURIComponent(productId)}${queryParam}`, {
           method: "DELETE",
           headers: adminHeaders(),
         });
@@ -521,10 +539,14 @@ function AdminContent() {
           fetchProducts();
           fetchNotifications();
         } else {
+          // Revert on server error
+          setProducts(prevProducts);
           alert(data.error || "Failed to delete product");
         }
-      } catch (err) {
+      } catch (err: any) {
+        setProducts(prevProducts);
         console.error("Error deleting product:", err);
+        alert(err.message || "Network error while deleting product");
       }
     }
   };
@@ -1118,7 +1140,7 @@ function AdminContent() {
                               </button>
                               <button
                                 type="button"
-                                onClick={() => handleDeleteProduct(p.id, p.name)}
+                                onClick={() => handleDeleteProduct(p.id || String((p as any)._id), p.name, (p as any)._id)}
                                 className="px-3 py-1 bg-[#EF4444] hover:bg-[#DC2626] text-white rounded-md font-bold text-xs transition-colors cursor-pointer shadow-2xs"
                               >
                                 Delete

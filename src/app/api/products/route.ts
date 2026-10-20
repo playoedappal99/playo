@@ -13,14 +13,21 @@ export async function GET(req: NextRequest) {
     const tag = searchParams.get("tag");
     const stockStatus = searchParams.get("stockStatus");
     const sort = searchParams.get("sort") || "newest";
+    const isNoCache =
+      searchParams.get("nocache") === "true" ||
+      searchParams.get("t") !== null ||
+      req.headers.get("cache-control")?.includes("no-cache") ||
+      req.headers.get("pragma")?.includes("no-cache");
     const cacheKey = req.url;
 
-    // Check memory cache (5s TTL for fresh data + instant speed)
-    const cached = getCachedProducts(cacheKey);
-    if (cached) {
-      return NextResponse.json(cached, {
-        headers: { "Cache-Control": "public, s-maxage=5, stale-while-revalidate=15" },
-      });
+    // Check memory cache only if no-cache is NOT requested
+    if (!isNoCache) {
+      const cached = getCachedProducts(cacheKey);
+      if (cached) {
+        return NextResponse.json(cached, {
+          headers: { "Cache-Control": "public, s-maxage=5, stale-while-revalidate=15" },
+        });
+      }
     }
 
     if (searchParams.get("categories") === "true") {
@@ -159,10 +166,18 @@ export async function GET(req: NextRequest) {
       count: formatted.length,
       products: formatted,
     };
-    setCachedProducts(cacheKey, responsePayload);
+
+    if (!isNoCache) {
+      setCachedProducts(cacheKey, responsePayload);
+    }
 
     return NextResponse.json(responsePayload, {
-      headers: { "Cache-Control": "public, s-maxage=5, stale-while-revalidate=15" },
+      headers: {
+        "Cache-Control": isNoCache
+          ? "no-store, no-cache, must-revalidate, max-age=0"
+          : "public, s-maxage=5, stale-while-revalidate=15",
+        Pragma: isNoCache ? "no-cache" : "",
+      },
     });
   } catch (error: any) {
     console.error("Error fetching products:", error);

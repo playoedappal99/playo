@@ -300,13 +300,19 @@ export async function DELETE(
       );
     }
 
+    const searchParams = req.nextUrl.searchParams;
+    const mongoId = searchParams.get("mongoId");
+
     const db = await getDatabase();
-    let query: any = { id };
+    const orConditions: any[] = [{ id: id }, { _id: id }];
     if (ObjectId.isValid(id)) {
-      query = { $or: [{ id }, { _id: new ObjectId(id) }] };
+      orConditions.push({ _id: new ObjectId(id) });
+    }
+    if (mongoId && ObjectId.isValid(mongoId)) {
+      orConditions.push({ _id: new ObjectId(mongoId) });
     }
 
-    const result = await db.collection("products").deleteOne(query);
+    const result = await db.collection("products").deleteOne({ $or: orConditions });
 
     if (result.deletedCount === 0) {
       return NextResponse.json(
