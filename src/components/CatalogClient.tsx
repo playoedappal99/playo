@@ -545,41 +545,41 @@ export default function CatalogClient({
           )}
         </nav>
 
-        {/* Page Heading & SEO Category Banner */}
-        <div className="mb-6 bg-white p-5 sm:p-6 rounded-2xl border border-gray-200/80 shadow-2xs">
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-[#0D1B2A] tracking-tight">
+        {/* Page Heading */}
+        <div className="mb-5 bg-white p-4 sm:p-5 rounded-2xl border border-gray-200/80 shadow-2xs">
+          <h1 className="text-lg sm:text-xl md:text-2xl font-extrabold text-[#0D1B2A] tracking-tight">
             {appliedFilters.category === "ride-ons"
-              ? "Kids' Electric Ride-On Cars & 4x4 Jeeps in Edappal"
+              ? "Electric Ride-Ons & Jeeps"
               : appliedFilters.category === "mini-bikes"
-              ? "Kids' Mini Bikes & Balance Dirt Bikes in Edappal"
+              ? "Kids' Mini Bikes"
               : appliedFilters.category === "scooters"
-              ? "Kids' Light-Up LED 3-Wheel Scooters in Edappal"
+              ? "Kids' Scooters"
               : appliedFilters.category === "rc-cars"
-              ? "High-Speed Remote Control (RC) Drift & Stunt Cars"
+              ? "Remote Control (RC) Cars"
               : appliedFilters.category === "diecast"
-              ? "Precision Diecast Metal Supercars & Scale Models"
+              ? "Diecast Models"
               : appliedFilters.category === "soft-toys"
-              ? "Plush Soft Toys & Birthday Gift Hampers in Edappal"
+              ? "Soft Toys"
               : appliedFilters.category === "learning"
-              ? "Creative & Learning Toys for Kids in Edappal"
-              : "Kids' Toys & Ride-On Vehicles Catalog — PLAYO Edappal"}
+              ? "Learning Toys"
+              : "All Toys & Ride-Ons"}
           </h1>
-          <p className="text-xs sm:text-sm text-gray-600 mt-1.5 max-w-3xl leading-relaxed">
+          <p className="text-xs sm:text-sm text-gray-500 mt-1 max-w-2xl">
             {appliedFilters.category === "ride-ons"
-              ? "Discover rechargeable 12V and 24V battery-operated 4x4 off-road jeeps and licensed luxury cars. Complete with parental 2.4GHz remote control, soft start, and pre-assembly at PLAYO showroom near Nesto Hypermarket, Edappal."
+              ? "Electric ride-on cars and 4x4 jeeps with remote control."
               : appliedFilters.category === "mini-bikes"
-              ? "Explore ultra-light magnesium alloy and steel frame kids' balance mini bikes and trail dirt bikes designed for early motor balance and cycling confidence."
+              ? "Balance bikes and mini dirt bikes for kids."
               : appliedFilters.category === "scooters"
-              ? "Shop foldable kick scooters featuring kinetic glowing LED wheels that require no batteries, lean-to-steer stability mechanisms, and adjustable height handlebars."
+              ? "Foldable kick scooters with light-up LED wheels."
               : appliedFilters.category === "rc-cars"
-              ? "High-performance 4WD RC drift cars with interchangeable racing tires, 2.4GHz anti-interference controllers, smoke effects, and all-terrain stunt vehicles."
+              ? "High-speed drift and stunt RC cars."
               : appliedFilters.category === "diecast"
-              ? "Collectible 1:24 and 1:18 scale metal vehicles featuring authentic opening doors, detailed engine bays, pullback action, and realistic lighting."
+              ? "Detailed scale metal collectible cars."
               : appliedFilters.category === "soft-toys"
-              ? "Giant cuddly teddy bears and plush characters crafted from ultra-soft, child-safe materials for birthdays and celebration gifts."
+              ? "Cuddly plush toys and gift sets."
               : appliedFilters.category === "learning"
-              ? "Engaging educational activity sets and building blocks designed to inspire young imagination and hands-on discovery."
-              : "Browse certified children's electric cars, battery 4x4 jeeps, balance bikes, LED kick scooters, RC cars, and diecast models available at our Edappal showroom near Nesto Hypermarket."}
+              ? "Educational activity sets and creative toys."
+              : "Explore quality ride-ons, mini bikes, scooters, and toys at PLAYO Edappal."}
           </p>
         </div>
 

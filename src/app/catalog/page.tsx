@@ -8,7 +8,7 @@ import { BUSINESS_INFO, getBreadcrumbSchema } from "@/lib/business-info";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Toy Catalog & Kids' Ride-Ons | PLAYO Edappal, Malappuram",
+  title: "Toy Shop in Edappal, Malappuram",
   description:
     "Explore kids' electric cars, 4x4 ride-on jeeps, mini bikes, light-up scooters, RC cars, and diecast models at PLAYO Edappal. In-store test drives & Kerala delivery.",
   alternates: {

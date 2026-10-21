@@ -61,32 +61,20 @@ export default function ProductCard({
       className={`group relative bg-white rounded-xl border border-gray-200/90 shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:shadow-[0_12px_24px_rgba(23,33,43,0.08)] hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between overflow-hidden h-full ${className}`}
     >
       <div>
-        {/* Top Image Container - Aspect 4:3 matching diecastshub.in */}
+        {/* Top Image Container */}
         <Link
           href={`/product/${product.id}`}
-          className="relative aspect-[4/3] w-full bg-slate-50/50 flex items-center justify-center overflow-hidden border-b border-gray-100 cursor-pointer block"
+          className="relative aspect-[4/3] w-full bg-slate-100 flex items-center justify-center overflow-hidden border-b border-gray-100 cursor-pointer block"
         >
-          {/* Subtle Ambient Blurred Underlay */}
-          <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-30">
-            <Image
-              src={getOptimizedImageUrl(product.imageUrl, { width: 100 })}
-              alt=""
-              fill
-              unoptimized
-              aria-hidden="true"
-              className="object-cover scale-125 blur-lg"
-            />
-          </div>
-
-          {/* Main Product Image with subtle padding and smooth hover zoom */}
-          <div className="relative w-full h-full p-2 sm:p-3 flex items-center justify-center z-1">
+          {/* Main Product Image - Fills entire container edge-to-edge without blank margins */}
+          <div className="relative w-full h-full">
             <Image
               src={getOptimizedImageUrl(product.imageUrl, { width: 500 })}
               alt={product.name}
               fill
               unoptimized
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-              className="object-contain object-center group-hover:scale-105 transition-transform duration-350 ease-out"
+              className="object-cover object-center group-hover:scale-105 transition-transform duration-350 ease-out w-full h-full"
             />
           </div>
 
