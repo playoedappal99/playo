@@ -24,6 +24,14 @@ try {
     }
 
     try {
+      execSync("git pull origin main --no-edit --allow-unrelated-histories -X ours", {
+        cwd: process.cwd(),
+        shell: "cmd.exe",
+        encoding: "utf8",
+      });
+    } catch {}
+
+    try {
       const pushOut = execSync("git push origin main", {
         cwd: process.cwd(),
         shell: "cmd.exe",
@@ -36,6 +44,18 @@ try {
       log.push("Push result:\n" + out);
       if (out.includes("main -> main") || out.includes("Everything up-to-date")) {
         fs.writeFileSync(marker, "Pushed at " + new Date().toISOString(), "utf8");
+      } else {
+        try {
+          const forceOut = execSync("git push origin main --force", {
+            cwd: process.cwd(),
+            shell: "cmd.exe",
+            encoding: "utf8",
+          });
+          log.push("Force push output:\n" + forceOut);
+          fs.writeFileSync(marker, "Pushed at " + new Date().toISOString(), "utf8");
+        } catch (fErr: any) {
+          log.push("Force push error:\n" + (fErr.stderr?.toString() || fErr.stdout?.toString() || fErr.message));
+        }
       }
     }
 
