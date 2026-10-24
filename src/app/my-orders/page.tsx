@@ -239,7 +239,7 @@ function MyOrdersContent() {
       const res = await fetch(endpoint, { cache: "no-store" });
       const data = await res.json();
       if (data.success && Array.isArray(data.orders) && data.orders.length > 0) {
-        const mapped = data.orders.map(mapRawOrder);
+        const mapped: OrderDetail[] = data.orders.map(mapRawOrder);
         setOrders(mapped);
         if (mapped.length === 1) {
           setSelectedOrderId(mapped[0].id);
@@ -249,7 +249,7 @@ function MyOrdersContent() {
         try {
           const stored = localStorage.getItem("playo_placed_order_ids");
           const list: string[] = stored ? JSON.parse(stored) : [];
-          mapped.forEach((m) => {
+          mapped.forEach((m: OrderDetail) => {
             if (!list.includes(m.id)) list.unshift(m.id);
           });
           localStorage.setItem("playo_placed_order_ids", JSON.stringify(list));
