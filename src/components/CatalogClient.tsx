@@ -18,8 +18,6 @@ import {
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import TrustBadges from "@/components/TrustBadges";
-import WhatsAppHelpStrip from "@/components/WhatsAppHelpStrip";
 import CartDrawer from "@/components/CartDrawer";
 import ProductCard from "@/components/ProductCard";
 import BuyNowModal from "@/components/BuyNowModal";
@@ -540,12 +538,50 @@ export default function CatalogClient({
           {appliedFilters.category !== "all" && (
             <>
               <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
-              <span className="text-sky-600 font-bold capitalize">
+              <span className="text-[#FF9800] font-bold capitalize">
                 {dynamicCategories.find((c) => c.value === appliedFilters.category)?.label || appliedFilters.category}
               </span>
             </>
           )}
         </nav>
+
+        {/* Page Heading */}
+        <div className="mb-5 bg-white p-4 sm:p-5 rounded-2xl border border-gray-200/80 shadow-2xs">
+          <h1 className="text-lg sm:text-xl md:text-2xl font-extrabold text-[#0D1B2A] tracking-tight">
+            {appliedFilters.category === "ride-ons"
+              ? "Electric Ride-Ons & Jeeps"
+              : appliedFilters.category === "mini-bikes"
+              ? "Kids' Mini Bikes"
+              : appliedFilters.category === "scooters"
+              ? "Kids' Scooters"
+              : appliedFilters.category === "rc-cars"
+              ? "Remote Control (RC) Cars"
+              : appliedFilters.category === "diecast"
+              ? "Diecast Models"
+              : appliedFilters.category === "soft-toys"
+              ? "Soft Toys"
+              : appliedFilters.category === "learning"
+              ? "Learning Toys"
+              : "All Toys & Ride-Ons"}
+          </h1>
+          <p className="text-xs sm:text-sm text-gray-500 mt-1 max-w-2xl">
+            {appliedFilters.category === "ride-ons"
+              ? "Electric ride-on cars and 4x4 jeeps with remote control."
+              : appliedFilters.category === "mini-bikes"
+              ? "Balance bikes and mini dirt bikes for kids."
+              : appliedFilters.category === "scooters"
+              ? "Foldable kick scooters with light-up LED wheels."
+              : appliedFilters.category === "rc-cars"
+              ? "High-speed drift and stunt RC cars."
+              : appliedFilters.category === "diecast"
+              ? "Detailed scale metal collectible cars."
+              : appliedFilters.category === "soft-toys"
+              ? "Cuddly plush toys and gift sets."
+              : appliedFilters.category === "learning"
+              ? "Educational activity sets and creative toys."
+              : "Explore quality ride-ons, mini bikes, scooters, and toys at PLAYO Edappal."}
+          </p>
+        </div>
 
         {/* Top Control Bar: Search, Mobile Filter Toggle, Sort */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-8">
@@ -724,12 +760,12 @@ export default function CatalogClient({
             </button>
 
             <div className="grid grid-cols-1 md:grid-cols-2">
-              <div className="relative aspect-square bg-[#f8fafc] p-6 flex items-center justify-center">
+              <div className="relative aspect-square bg-[#f8fafc] p-0 m-0 flex items-center justify-center overflow-hidden">
                 <Image
                   src={quickViewProduct.imageUrl}
                   alt={quickViewProduct.name}
                   fill
-                  className="object-contain p-4"
+                  className="object-contain"
                 />
               </div>
 
@@ -844,8 +880,6 @@ export default function CatalogClient({
         onRemoveItem={removeFromCart}
       />
 
-      <TrustBadges />
-      <WhatsAppHelpStrip />
       <Footer categories={dbCategories} />
     </div>
   );

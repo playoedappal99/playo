@@ -1,8 +1,18 @@
 import { getDatabase } from "@/lib/mongodb";
 import HomeClient from "@/components/HomeClient";
 import { ProductItem, CategoryItem } from "@/data/store-data";
+import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "PLAYO Toy Shop in Edappal, Malappuram | Kids' Toys & Ride-On Vehicles",
+  description:
+    "Discover toys for kids at PLAYO, near Nesto Hypermarket, Edappal, Malappuram. Explore available toy categories and visit us daily from 9:30 AM to 10:30 PM.",
+  alternates: {
+    canonical: "https://playoedappal.in",
+  },
+};
 
 export default async function Home() {
   try {

@@ -63,34 +63,56 @@ export default function CategorySection({
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5 lg:gap-6">
-            {categories.map((cat) => (
-              <button
-                key={cat.id}
-                type="button"
-                onClick={() => onSelectCategory(cat.slug)}
-                className="group text-left w-full h-full cursor-pointer rounded-2xl overflow-hidden border border-gray-100/90 bg-[#FFFFFF] shadow-xs hover:shadow-md transition-all duration-300 hover:-translate-y-1 flex flex-col justify-between focus-visible:ring-2 focus-visible:ring-[#FF9800] focus-visible:outline-none"
-                aria-label={`Shop ${cat.name}`}
-              >
-                {/* Category Image Container */}
-                <div className="relative aspect-[16/11] w-full overflow-hidden bg-[#F5F7FA] flex items-center justify-center p-3 sm:p-4">
-                  <Image
-                    src={cat.imageUrl && !cat.imageUrl.startsWith("blob:") ? cat.imageUrl : "https://images.unsplash.com/photo-1594787318286-3d835c1d207f?auto=format&fit=crop&w=600&q=80"}
-                    alt={cat.name}
-                    fill
-                    className="object-contain p-2.5 group-hover:scale-108 transition-transform duration-500"
-                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                  />
-                </div>
+            {categories.map((cat) => {
+              const imageSrc = cat.imageUrl && !cat.imageUrl.startsWith("blob:") 
+                ? cat.imageUrl 
+                : "https://images.unsplash.com/photo-1594787318286-3d835c1d207f?auto=format&fit=crop&w=600&q=80";
 
-                {/* Bottom Label Bar */}
-                <div className="p-3 sm:p-4 flex items-center justify-between bg-white border-t border-gray-50/80 flex-1">
-                  <h3 className="text-xs sm:text-sm md:text-[15px] font-bold text-[#0D1B2A] group-hover:text-[#FF9800] transition-colors line-clamp-1">
-                    {cat.name}
-                  </h3>
-                  <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400 group-hover:text-[#FF9800] group-hover:translate-x-1 transition-all shrink-0 ml-1.5" />
-                </div>
-              </button>
-            ))}
+              return (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => onSelectCategory(cat.slug)}
+                  className="group text-left w-full h-full cursor-pointer rounded-xl overflow-hidden border border-gray-200/90 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:shadow-[0_12px_24px_rgba(23,33,43,0.08)] transition-all duration-300 hover:-translate-y-1 flex flex-col justify-between focus-visible:ring-2 focus-visible:ring-[#FF9800] focus-visible:outline-none"
+                  aria-label={`Shop ${cat.name}`}
+                >
+                  {/* Category Image Container - 4:3 Aspect Ratio with full image containment */}
+                  <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-50/60 border-b border-gray-100 flex items-center justify-center">
+                    {/* Subtle ambient blurred glow behind cutout toys */}
+                    <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-25">
+                      <Image
+                        src={imageSrc}
+                        alt=""
+                        fill
+                        unoptimized
+                        aria-hidden="true"
+                        className="object-cover scale-125 blur-lg"
+                      />
+                    </div>
+
+                    {/* Main Image - Perfectly fitted with uniform padding and smooth hover zoom */}
+                    <div className="relative w-full h-full p-3 sm:p-4 flex items-center justify-center z-1">
+                      <Image
+                        src={imageSrc}
+                        alt={cat.name}
+                        fill
+                        unoptimized
+                        className="object-contain object-center group-hover:scale-106 transition-transform duration-350 ease-out"
+                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Bottom Label Bar */}
+                  <div className="p-2.5 sm:p-3.5 flex items-center justify-between bg-white flex-1">
+                    <h3 className="text-xs sm:text-sm md:text-[15px] font-bold text-[#0D1B2A] group-hover:text-sky-600 transition-colors line-clamp-1">
+                      {cat.name}
+                    </h3>
+                    <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400 group-hover:text-sky-600 group-hover:translate-x-1 transition-all shrink-0 ml-1.5" />
+                  </div>
+                </button>
+              );
+            })}
           </div>
         )}
       </div>

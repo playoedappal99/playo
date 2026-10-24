@@ -4,6 +4,11 @@ import ProductDetailClient from "./ProductDetailClient";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { ProductItem } from "@/data/store-data";
+import { 
+  BUSINESS_INFO, 
+  getProductSchema, 
+  getBreadcrumbSchema 
+} from "@/lib/business-info";
 
 export const dynamic = "force-dynamic";
 
@@ -30,20 +35,42 @@ export async function generateMetadata({
 
     if (!product) {
       return {
-        title: "Product Details | Playo Edappal Toys Superstore",
-        description: "Explore premium kids ride-ons, bikes, jeeps and toys at Playo Edappal showroom.",
+        title: "Product Details | PLAYO Edappal Toy Showroom",
+        description: "Explore kids' ride-on cars, bikes, jeeps, and toys at PLAYO Edappal showroom near Nesto Hypermarket.",
+        alternates: {
+          canonical: `${BUSINESS_INFO.url}/catalog`,
+        },
       };
     }
 
+    const prodId = product.id || String(product._id);
+    const prodImg = product.imageUrl || product.images?.[0] || "/images/catalog/porsche-drift-rc.jpg";
+
     return {
-      title: `${product.name.toUpperCase()} | Playo Edappal Toy Showroom`,
+      title: `${product.name} | PLAYO Toy Shop Edappal`,
       description:
         product.description?.slice(0, 160) ||
-        `Buy ${product.name} at Playo Edappal. Guaranteed quality, best price, and door-to-door delivery across Kerala.`,
+        `Buy ${product.name} at PLAYO Edappal near Nesto Hypermarket. Price: ₹${product.price}. Verified quality, motor warranty, and delivery across Kerala.`,
+      alternates: {
+        canonical: `${BUSINESS_INFO.url}/product/${prodId}`,
+      },
+      openGraph: {
+        title: `${product.name} | PLAYO Toy Shop Edappal`,
+        description:
+          product.description?.slice(0, 160) ||
+          `Buy ${product.name} at PLAYO Edappal near Nesto Hypermarket. Verified quality and Kerala delivery.`,
+        url: `${BUSINESS_INFO.url}/product/${prodId}`,
+        images: [
+          {
+            url: prodImg.startsWith("http") ? prodImg : `${BUSINESS_INFO.url}${prodImg}`,
+            alt: `${product.name} - PLAYO Edappal`,
+          },
+        ],
+      },
     };
   } catch {
     return {
-      title: "Playo Edappal | Premium Kids Ride-Ons & Toys",
+      title: "PLAYO Toy Shop in Edappal | Kids' Ride-Ons & Toys",
     };
   }
 }
@@ -185,10 +212,39 @@ export default async function ProductDetailPage({
     inStock: (typeof p.stockCount === "number" ? p.stockCount : 0) > 0,
   }));
 
+  const productSchema = getProductSchema({
+    id: formattedProduct.id,
+    name: formattedProduct.name,
+    description: formattedProduct.description,
+    imageUrl: formattedProduct.imageUrl,
+    images: formattedProduct.images,
+    price: formattedProduct.price,
+    originalPrice: formattedProduct.originalPrice,
+    inStock: formattedProduct.inStock,
+    category: formattedProduct.category || formattedProduct.categorySlug,
+    brand: formattedProduct.brand || "PLAYO",
+  });
+
+  const breadcrumbSchema = getBreadcrumbSchema([
+    { name: "Home", url: "/" },
+    { name: "Toy Catalog", url: "/catalog" },
+    { name: formattedProduct.name, url: `/product/${formattedProduct.id}` },
+  ]);
+
   return (
-    <ProductDetailClient
-      initialProduct={formattedProduct}
-      initialRelatedProducts={formattedRelated}
-    />
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
+      <ProductDetailClient
+        initialProduct={formattedProduct}
+        initialRelatedProducts={formattedRelated}
+      />
+    </>
   );
 }

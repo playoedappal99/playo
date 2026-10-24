@@ -204,7 +204,7 @@ export default function HeroSection({
               
               {/* Left Column: Bold Headline & CTA Button */}
               <div className="col-span-6 sm:col-span-7 lg:col-span-6 z-10 space-y-2 xs:space-y-2.5 sm:space-y-3 pr-1 sm:pr-4">
-                <div className="flex flex-col tracking-tight">
+                <h1 className="flex flex-col tracking-tight">
                   {/* Line 1: Kicker / White text */}
                   <span className="font-outfit font-black text-2xl xs:text-3xl sm:text-5xl md:text-6xl lg:text-7xl text-white leading-[1.08] drop-shadow-sm">
                     {currentSlide.kicker}
@@ -216,7 +216,8 @@ export default function HeroSection({
                   >
                     {currentSlide.title}
                   </span>
-                </div>
+                  <span className="sr-only"> — PLAYO Toy Shop in Edappal, Malappuram | Kids&apos; Toys &amp; Ride-On Vehicles</span>
+                </h1>
 
                 <p className="hidden sm:block text-xs md:text-sm text-gray-200/90 font-medium max-w-md pt-0.5">
                   {currentSlide.description}

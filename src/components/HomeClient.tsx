@@ -5,9 +5,9 @@ import Navbar from "@/components/Navbar";
 import HeroSection from "@/components/HeroSection";
 import CategorySection from "@/components/CategorySection";
 import FeaturedPicks from "@/components/FeaturedPicks";
-import SpecialOfferBanner from "@/components/SpecialOfferBanner";
 import WhatsAppHelpStrip from "@/components/WhatsAppHelpStrip";
 import TrustBadges from "@/components/TrustBadges";
+import FaqSection from "@/components/FaqSection";
 import Footer from "@/components/Footer";
 import CartDrawer from "@/components/CartDrawer";
 import { ProductItem, CategoryItem } from "@/data/store-data";
@@ -144,19 +144,17 @@ export default function HomeClient({
           wishlistIds={wishlistIds}
         />
 
-        {/* 5. Promotional Banner */}
-        <SpecialOfferBanner
-          onShopNow={() => handleSelectCategory("ride-ons")}
-        />
+        {/* 6. GEO & Search FAQs */}
+        <FaqSection />
 
-        {/* 6. WhatsApp Help Strip */}
+        {/* 9. WhatsApp Help Strip */}
         <WhatsAppHelpStrip />
 
-        {/* 8. Trust Badges Pill Bar */}
+        {/* 10. Trust Badges Pill Bar */}
         <TrustBadges />
       </main>
 
-      {/* 9. Footer */}
+      {/* 11. Footer */}
       <Footer onSelectCategory={handleSelectCategory} categories={categories} />
 
       {/* Cart Slide-Over Drawer */}

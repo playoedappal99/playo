@@ -410,7 +410,7 @@ export default function CheckoutSection({
               </button>
 
               <a
-                href={`https://wa.me/919072345678?text=${encodeURIComponent(
+                href={`https://wa.me/919605973308?text=${encodeURIComponent(
                   `Hi Playo Edappal! I just placed order #${placedOrderId} for ${product.name} (₹${totalAmount.toLocaleString(
                     "en-IN"
                   )}) via Razorpay. Please share dispatch updates!`

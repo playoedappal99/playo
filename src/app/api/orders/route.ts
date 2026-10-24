@@ -291,6 +291,7 @@ export async function POST(req: NextRequest) {
     // 6. Assemble and insert complete Order document
     const newOrder = {
       id: orderId,
+      orderNumber: orderId,
       orderDate: new Date().toLocaleDateString("en-IN", {
         day: "2-digit",
         month: "short",

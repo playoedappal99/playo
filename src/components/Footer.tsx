@@ -138,10 +138,10 @@ export default function Footer({
 
           {/* Col 3: Customer Care (2.5 cols) */}
           <div className="lg:col-span-2">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-gray-200 mb-4">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-gray-200 mb-3 sm:mb-4">
               Customer Care
             </h4>
-            <ul className="space-y-2.5 text-xs text-gray-300">
+            <ul className="space-y-2 text-xs text-gray-300">
               <li>
                 <Link href="/my-orders" className="text-[#FF9800] hover:underline font-semibold transition-colors flex items-center gap-1">
                   <span>Track My Order</span>
@@ -153,7 +153,19 @@ export default function Footer({
                 </Link>
               </li>
               <li>
-                <a href="#footer" className="hover:text-white transition-colors">About Playo Edappal</a>
+                <Link href="/contact" className="hover:text-[#FF9800] transition-colors">
+                  Contact &amp; Directions
+                </Link>
+              </li>
+              <li>
+                <Link href="/toy-shop-edappal" className="hover:text-[#FF9800] transition-colors">
+                  Showroom Guide
+                </Link>
+              </li>
+              <li>
+                <a href="https://wa.me/919605973308?text=Hi%20Playo%20Edappal,%20I%20have%20an%20enquiry" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">
+                  WhatsApp Support
+                </a>
               </li>
               <li>
                 <Link href="/admin" className="text-gray-400 hover:text-[#FF9800] transition-colors">
@@ -182,18 +194,22 @@ export default function Footer({
                 </Link>
               </li>
             </ul>
+            <div className="mt-3 pt-3 border-t border-white/10 space-y-1 text-[11px] text-gray-400">
+              <p>✓ Free doorstep delivery</p>
+              <p>✓ 7-day replacement guarantee</p>
+            </div>
           </div>
 
-          {/* Col 4: Get in Touch (3.5 cols) */}
+          {/* Col 4: Get in Touch & Showroom Details (3.5 cols) */}
           <div className="lg:col-span-3 space-y-3">
             <h4 className="text-xs font-bold uppercase tracking-wider text-gray-200 mb-4">
-              Get in Touch
+              Visit or Contact Store
             </h4>
             <ul className="space-y-3 text-xs text-gray-300">
               <li className="flex items-center gap-2.5">
                 <Phone className="w-4 h-4 text-[#FF9800] shrink-0" />
-                <a href="tel:+919072345678" className="hover:text-white transition-colors font-medium">
-                  +91 9072 345 678
+                <a href="tel:+919605973308" className="hover:text-white transition-colors font-medium">
+                  +91 96059 73308
                 </a>
               </li>
               <li className="flex items-center gap-2.5">
@@ -205,12 +221,18 @@ export default function Footer({
               <li className="flex items-start gap-2.5">
                 <MapPin className="w-4 h-4 text-[#FF9800] shrink-0 mt-0.5" />
                 <span className="leading-relaxed">
-                  Playo Toys & Ride-Ons Showroom <br />
-                  Edappal, Malappuram District <br />
-                  Kerala — 679541
+                  PLAYO Toys &amp; Ride-Ons Showroom <br />
+                  Near Nesto Hypermarket, Edappal <br />
+                  Malappuram District, Kerala — 679576
                 </span>
               </li>
             </ul>
+
+            <div className="pt-2 text-[11px] text-gray-400 space-y-1">
+              <p className="text-gray-300 font-semibold">Store Timings:</p>
+              <p>Mon – Sun: 9:30 AM – 10:30 PM</p>
+              <p className="text-emerald-400 font-medium">Open all 7 days (No weekly holiday)</p>
+            </div>
 
             <div className="pt-2">
               <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-xs text-gray-300">

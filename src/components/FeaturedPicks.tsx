@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import { ProductItem } from "../data/store-data";
 import ProductCard from "./ProductCard";
 import BuyNowModal from "./BuyNowModal";
@@ -26,11 +28,17 @@ export default function FeaturedPicks({
 }: FeaturedPicksProps) {
   const [buyNowProduct, setBuyNowProduct] = useState<ProductItem | null>(null);
 
+  // If products are marked as Best Toys in the Admin Dashboard, prioritize them here
+  const bestToyProducts = useMemo(() => {
+    const marked = products.filter((p) => p.isBestToy === true);
+    return marked.length > 0 ? marked : products;
+  }, [products]);
+
   // Dynamically compute category filter tabs from DB products
   const filterTabs = useMemo(() => {
     const map = new Map<string, string>();
     map.set("all", "All");
-    products.forEach((p) => {
+    bestToyProducts.forEach((p) => {
       const slug = p.categorySlug || "other";
       const name = p.category || slug.replace(/-/g, " ");
       if (!map.has(slug)) {
@@ -38,12 +46,12 @@ export default function FeaturedPicks({
       }
     });
     return Array.from(map.entries()).map(([slug, name]) => ({ name, slug }));
-  }, [products]);
+  }, [bestToyProducts]);
 
   const filtered = useMemo(() => {
-    if (activeCategory === "all") return products;
-    return products.filter((p) => p.categorySlug === activeCategory || p.category === activeCategory);
-  }, [products, activeCategory]);
+    if (activeCategory === "all") return bestToyProducts;
+    return bestToyProducts.filter((p) => p.categorySlug === activeCategory || p.category === activeCategory);
+  }, [bestToyProducts, activeCategory]);
 
   const handleBuyNow = (prod: ProductItem) => {
     onAddToCart(prod);
@@ -63,7 +71,7 @@ export default function FeaturedPicks({
               Loved by little drivers
             </h2>
             <p className="text-xs sm:text-sm text-gray-500 mt-1 font-medium">
-              Top bestselling picks from our Edappal showroom collection
+              Top curated picks from our Edappal showroom collection
             </p>
           </div>
 
@@ -113,6 +121,17 @@ export default function FeaturedPicks({
             })}
           </div>
         )}
+
+        {/* View Full Catalog Button */}
+        <div className="mt-10 sm:mt-12 flex justify-center">
+          <Link
+            href="/catalog"
+            className="inline-flex items-center gap-2 px-7 sm:px-9 py-3 sm:py-3.5 rounded-full bg-[#0D1B2A] hover:bg-black text-white font-bold text-xs sm:text-sm shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5 active:scale-95 group cursor-pointer"
+          >
+            <span>View Full Catalog</span>
+            <ArrowRight className="w-4 h-4 text-[#FF9800] group-hover:translate-x-1 transition-transform" />
+          </Link>
+        </div>
       </div>
 
       {/* Buy Now Checkout Modal */}
