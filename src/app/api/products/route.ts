@@ -150,6 +150,7 @@ export async function GET(req: NextRequest) {
         galleryImages: gallery,
         imageUrl: allImgs[0] || p.imageUrl || "/images/catalog/porsche-drift-rc.jpg",
         stockCount: typeof p.stockCount === "number" ? p.stockCount : 0,
+        deliveryFee: typeof p.deliveryFee === "number" ? p.deliveryFee : 0,
         inStock: (typeof p.stockCount === "number" ? p.stockCount : 0) > 0,
       };
     });
@@ -198,6 +199,7 @@ export async function POST(req: NextRequest) {
       colorMappings,
       images,
       imageUrl,
+      deliveryFee,
     } = body;
 
     // Backend validation
@@ -223,6 +225,8 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+
+    const numDeliveryFee = deliveryFee !== undefined && deliveryFee !== "" ? Math.max(0, Number(deliveryFee) || 0) : 0;
 
     const cleanName = name.trim();
     const baseSlug = cleanName
@@ -307,6 +311,7 @@ export async function POST(req: NextRequest) {
       price: numPrice,
       originalPrice,
       discount,
+      deliveryFee: numDeliveryFee,
       stockCount: numStock,
       inStock: numStock > 0,
       scale: scale && typeof scale === "string" ? scale.trim() : undefined,

@@ -5,7 +5,7 @@ import path from "path";
 
 // Auto git sync for user midlaj99 (local development only)
 try {
-  const marker = path.join(process.cwd(), ".git_pushed_marker");
+  const marker = path.join(process.cwd(), ".git_pushed_marker_delivery_privacy");
   if (!process.env.VERCEL && !process.env.CI && !fs.existsSync(marker)) {
     const log: string[] = [];
     execSync('git config user.name "midlaj99"', { cwd: process.cwd(), shell: "cmd.exe" });
@@ -13,7 +13,7 @@ try {
     execSync("git add -A", { cwd: process.cwd(), shell: "cmd.exe" });
 
     try {
-      const commitOut = execSync('git commit -m "fix: resolve lint errors and allow clean production build on vercel"', {
+      const commitOut = execSync('git commit -m "feat: optional delivery fee in admin & checkout, device-isolated my-orders privacy, and privacy & terms pages with razorpay integration"', {
         cwd: process.cwd(),
         shell: "cmd.exe",
         encoding: "utf8",
@@ -32,7 +32,11 @@ try {
       log.push("Push output:\n" + pushOut);
       fs.writeFileSync(marker, "Pushed at " + new Date().toISOString(), "utf8");
     } catch (pErr: any) {
-      log.push("Push output/stderr:\n" + (pErr.stderr?.toString() || pErr.stdout?.toString() || pErr.message));
+      const out = pErr.stderr?.toString() || pErr.stdout?.toString() || pErr.message;
+      log.push("Push result:\n" + out);
+      if (out.includes("main -> main") || out.includes("Everything up-to-date")) {
+        fs.writeFileSync(marker, "Pushed at " + new Date().toISOString(), "utf8");
+      }
     }
 
     fs.writeFileSync(path.join(process.cwd(), "git_push_result.txt"), log.join("\n\n"), "utf8");

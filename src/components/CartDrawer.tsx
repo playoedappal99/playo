@@ -57,12 +57,17 @@ export default function CartDrawer({
     0
   );
 
+  const deliveryFee = cartItems.reduce(
+    (sum, item) => sum + (item.product.deliveryFee || 0) * item.quantity,
+    0
+  );
+
   let discountAmount = 0;
   if (activeOffer && subtotal >= activeOffer.minAmount) {
     discountAmount = Math.round((subtotal * activeOffer.discountPercentage) / 100);
   }
 
-  const finalTotal = Math.max(0, subtotal - discountAmount);
+  const finalTotal = Math.max(0, subtotal - discountAmount + deliveryFee);
 
   // Build WhatsApp prefilled order message
   const itemsText = cartItems
@@ -76,7 +81,9 @@ export default function CartDrawer({
 
   const whatsappMessage = `*NEW ORDER from Playo Edappal Website*%0A%0A${itemsText}%0A%0A*Total Amount: ₹${finalTotal.toLocaleString(
     "en-IN"
-  )}*${discountAmount > 0 ? `%0A🎉 Special Offer Discount: -₹${discountAmount.toLocaleString("en-IN")}` : ""}%0A⚡ Free Doorstep Delivery%0A%0APlease confirm availability and delivery details!`;
+  )}*${discountAmount > 0 ? `%0A🎉 Special Offer Discount: -₹${discountAmount.toLocaleString("en-IN")}` : ""}%0A${
+    deliveryFee > 0 ? `🚚 Delivery Fee: ₹${deliveryFee.toLocaleString("en-IN")}` : "⚡ Free Doorstep Delivery"
+  }%0A%0APlease confirm availability and delivery details!`;
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden bg-black/60 backdrop-blur-sm animate-fadeIn">
@@ -225,7 +232,11 @@ export default function CartDrawer({
 
                 <div className="flex justify-between">
                   <span>Delivery in Kerala</span>
-                  <span className="text-emerald-600 font-bold">FREE</span>
+                  {deliveryFee > 0 ? (
+                    <span className="font-bold text-gray-900">+₹{deliveryFee.toLocaleString("en-IN")}</span>
+                  ) : (
+                    <span className="text-emerald-600 font-bold">FREE</span>
+                  )}
                 </div>
                 <div className="flex justify-between text-base font-black text-gray-950 pt-2 border-t border-gray-100">
                   <span>Total Amount</span>

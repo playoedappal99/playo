@@ -162,21 +162,59 @@ function MyOrdersContent() {
     cancelReason: raw.cancelReason,
   });
 
-  // Load orders directly from MongoDB database API
+  // Load orders directly from MongoDB database API for orders placed on THIS device
   useEffect(() => {
     async function loadOrders() {
       setIsLoading(true);
       try {
-        const queryParam = urlOrderId ? `?id=${encodeURIComponent(urlOrderId)}` : "";
-        const res = await fetch(`/api/orders${queryParam}`, { cache: "no-store" });
+        if (urlOrderId) {
+          const res = await fetch(`/api/orders?id=${encodeURIComponent(urlOrderId)}`, { cache: "no-store" });
+          const data = await res.json();
+          if (data.success && Array.isArray(data.orders) && data.orders.length > 0) {
+            const mapped: OrderDetail[] = data.orders.map(mapRawOrder);
+            setOrders(mapped);
+            setSelectedOrderId(urlOrderId);
+
+            // Add urlOrderId to device tracking storage
+            try {
+              const stored = localStorage.getItem("playo_placed_order_ids");
+              const list: string[] = stored ? JSON.parse(stored) : [];
+              if (!list.includes(urlOrderId)) {
+                list.unshift(urlOrderId);
+                localStorage.setItem("playo_placed_order_ids", JSON.stringify(list));
+              }
+            } catch {}
+            return;
+          }
+        }
+
+        // Get placed order IDs saved in this device's localStorage
+        let deviceIds: string[] = [];
+        try {
+          const stored = localStorage.getItem("playo_placed_order_ids");
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            if (Array.isArray(parsed)) {
+              deviceIds = parsed.filter((id) => typeof id === "string" && id.trim().length > 0);
+            }
+          }
+        } catch (e) {
+          console.warn("Could not read device order IDs:", e);
+        }
+
+        if (deviceIds.length === 0) {
+          // No orders placed on this device yet - do not fetch any stranger's orders!
+          setOrders([]);
+          return;
+        }
+
+        const res = await fetch(`/api/orders?ids=${encodeURIComponent(deviceIds.join(","))}`, { cache: "no-store" });
         const data = await res.json();
         if (data.success && Array.isArray(data.orders)) {
           const mapped: OrderDetail[] = data.orders.map(mapRawOrder);
           setOrders(mapped);
-          if (urlOrderId) {
-            const found = mapped.find((o: OrderDetail) => o.id === urlOrderId);
-            if (found) setSelectedOrderId(urlOrderId);
-          }
+        } else {
+          setOrders([]);
         }
       } catch (err) {
         console.error("Error fetching orders:", err);
@@ -208,6 +246,16 @@ function MyOrdersContent() {
         if (mapped.length === 1) {
           setSelectedOrderId(mapped[0].id);
         }
+
+        // Save found order IDs into this device's storage
+        try {
+          const stored = localStorage.getItem("playo_placed_order_ids");
+          const list: string[] = stored ? JSON.parse(stored) : [];
+          mapped.forEach((m) => {
+            if (!list.includes(m.id)) list.unshift(m.id);
+          });
+          localStorage.setItem("playo_placed_order_ids", JSON.stringify(list));
+        } catch {}
       } else {
         setTrackError(`No order found matching "${q}". Please verify the Order ID or 10-digit mobile number.`);
       }
@@ -661,7 +709,11 @@ function MyOrdersContent() {
                     )}
                     <div className="flex justify-between text-gray-500">
                       <span>Delivery</span>
-                      <span className="text-emerald-600 font-semibold">FREE</span>
+                      {currentOrder.deliveryFee > 0 ? (
+                        <span className="text-gray-900 font-semibold">+₹{currentOrder.deliveryFee.toLocaleString("en-IN")}</span>
+                      ) : (
+                        <span className="text-emerald-600 font-semibold">FREE</span>
+                      )}
                     </div>
                     <div className="pt-2.5 border-t border-gray-100 flex justify-between items-baseline font-bold">
                       <span className="text-gray-900">Total Amount</span>

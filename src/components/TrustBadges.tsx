@@ -12,8 +12,8 @@ export default function TrustBadges() {
     },
     {
       icon: Truck,
-      title: "Free Shipping",
-      desc: "On orders above ₹999",
+      title: "Doorstep Delivery",
+      desc: "Fast & safe across Kerala",
     },
     {
       icon: Shield,

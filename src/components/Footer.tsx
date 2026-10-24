@@ -166,10 +166,20 @@ export default function Footer({
                 </a>
               </li>
               <li>
-                <span className="text-gray-400 block pt-1">Free doorstep delivery</span>
+                <span className="text-gray-400 block pt-1">Doorstep delivery across Kerala</span>
               </li>
               <li>
                 <span className="text-gray-400 block">7-day replacement guarantee</span>
+              </li>
+              <li>
+                <Link href="/privacy-policy" className="hover:text-white transition-colors">
+                  Privacy Policy
+                </Link>
+              </li>
+              <li>
+                <Link href="/terms-and-conditions" className="hover:text-white transition-colors">
+                  Terms &amp; Conditions
+                </Link>
               </li>
             </ul>
           </div>
@@ -213,7 +223,18 @@ export default function Footer({
 
         {/* Bottom copyright row */}
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between text-xs text-gray-400 gap-3">
-          <p>© 2026 PlayoToys Edappal. All rights reserved.</p>
+          <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
+            <p>© 2026 PlayoToys Edappal. All rights reserved.</p>
+            <div className="flex items-center gap-3 text-[11px] text-gray-400">
+              <Link href="/privacy-policy" className="hover:text-gray-200 transition-colors">
+                Privacy
+              </Link>
+              <span>•</span>
+              <Link href="/terms-and-conditions" className="hover:text-gray-200 transition-colors">
+                Terms
+              </Link>
+            </div>
+          </div>
           <p className="flex items-center gap-1.5">
             <span>Play • Learn • Grow with</span>
             <Heart className="w-3.5 h-3.5 text-[#FF9800] fill-current inline" />

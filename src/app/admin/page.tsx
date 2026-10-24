@@ -65,6 +65,7 @@ export interface FormProductState {
   scale: string;
   category: string;
   price: string;
+  deliveryFee: string;
   stockCount: string;
   material: string;
   description: string;
@@ -205,6 +206,7 @@ function AdminContent() {
     scale: "",
     category: "",
     price: "",
+    deliveryFee: "",
     stockCount: "5",
     material: "Diecast Metal with Plastic Parts",
     description: "",
@@ -654,6 +656,7 @@ function AdminContent() {
       scale: p.scale || (p.specs?.scale || ""),
       category: p.category || "",
       price: p.price.toString(),
+      deliveryFee: p.deliveryFee !== undefined && p.deliveryFee !== null ? p.deliveryFee.toString() : "",
       stockCount: p.stockCount.toString(),
       material: p.material || p.specs?.material || "Diecast Metal with Plastic Parts",
       description: p.description || "",
@@ -708,6 +711,7 @@ function AdminContent() {
         brand: formProduct.brand.trim() || undefined,
         category: formProduct.category.trim() || "General",
         price: pr,
+        deliveryFee: formProduct.deliveryFee && Number(formProduct.deliveryFee) > 0 ? Number(formProduct.deliveryFee) : 0,
         stockCount: st,
         scale: formProduct.scale.trim() || undefined,
         material: formProduct.material.trim() || "Diecast Metal with Plastic Parts",
@@ -1958,8 +1962,8 @@ function AdminContent() {
                   </div>
                 </div>
 
-                {/* 6. Price (₹) & Stock Quantity */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* 6. Price (₹), Delivery Fee (₹) & Stock Quantity */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-slate-800 mb-1.5">
                       Price (₹) *
@@ -1976,6 +1980,22 @@ function AdminContent() {
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-slate-800 mb-1.5">
+                      Delivery Fee (₹) <span className="text-slate-400 font-normal">(Optional)</span>
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={formProduct.deliveryFee}
+                      onChange={(e) => setFormProduct({ ...formProduct, deliveryFee: e.target.value })}
+                      placeholder="0 (Free Delivery)"
+                      className="w-full px-4 py-2.5 text-xs sm:text-sm rounded-xl border border-slate-200 focus:border-[#0284C7] focus:ring-2 focus:ring-sky-100 outline-none transition-all"
+                    />
+                    <p className="text-[10px] text-slate-400 mt-1">
+                      Leave empty or 0 for Free Delivery.
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-800 mb-1.5">
                       Stock Quantity (Backend Validated) *
                     </label>
                     <input
@@ -1988,7 +2008,7 @@ function AdminContent() {
                       className="w-full px-4 py-2.5 text-xs sm:text-sm rounded-xl border border-slate-200 focus:border-[#0284C7] focus:ring-2 focus:ring-sky-100 outline-none transition-all"
                     />
                     <p className="text-[10px] text-slate-400 mt-1">
-                      Stock &lt; 3 triggers automatic showroom low stock alert.
+                      Stock &lt; 3 triggers low stock alert.
                     </p>
                   </div>
                 </div>

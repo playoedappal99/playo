@@ -41,6 +41,7 @@ export interface ProductItem {
   rating: number;
   reviewsCount: number;
   soldCount?: number;
+  deliveryFee?: number;
   imageUrl: string;
   tag?: string;
   features?: string[];

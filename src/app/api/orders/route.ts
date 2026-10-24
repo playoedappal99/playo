@@ -10,42 +10,63 @@ export async function GET(req: NextRequest) {
     const status = searchParams.get("status");
     const search = searchParams.get("search");
     const id = searchParams.get("id");
+    const ids = searchParams.get("ids");
     const phone = searchParams.get("phone");
 
     const isAdmin = validateAdminAuth(req);
     const query: any = {};
 
-    if (status && status !== "ALL") {
-      query.status = status;
-    }
-
-    if (id && id.trim()) {
-      query.id = id.trim();
-    } else if (phone && phone.trim()) {
-      query.phone = phone.trim().replace(/\D/g, "");
-    } else if (search && search.trim()) {
-      // ReDoS safe escaped regex
-      const safeSearch = escapeRegex(search.trim());
-      const regex = new RegExp(safeSearch, "i");
-      query.$or = [
-        { id: regex },
-        { customerName: regex },
-        { phone: regex },
-        { deliveryAddress: regex },
-        { "items.name": regex },
-      ];
-    } else if (!isAdmin) {
-      // Customer privacy: Do not dump database orders to anonymous requests
-      const placedCookie = req.cookies.get("playo_placed_order_ids")?.value;
-      if (placedCookie) {
-        const orderIds = placedCookie.split(",").map((s) => s.trim()).filter(Boolean);
-        if (orderIds.length > 0) {
-          query.id = { $in: orderIds };
+    if (isAdmin) {
+      if (status && status !== "ALL") {
+        query.status = status;
+      }
+      if (id && id.trim()) {
+        query.id = id.trim();
+      } else if (phone && phone.trim()) {
+        query.phone = phone.trim().replace(/\D/g, "");
+      } else if (search && search.trim()) {
+        const safeSearch = escapeRegex(search.trim());
+        const regex = new RegExp(safeSearch, "i");
+        query.$or = [
+          { id: regex },
+          { customerName: regex },
+          { phone: regex },
+          { deliveryAddress: regex },
+          { "items.name": regex },
+        ];
+      }
+    } else {
+      // Non-admin device-isolated queries: Only return orders placed by this device or exact order token
+      if (ids && ids.trim()) {
+        const idList = ids.split(",").map((s) => s.trim()).filter(Boolean);
+        if (idList.length > 0) {
+          query.id = { $in: idList };
+        } else {
+          return NextResponse.json({ success: true, count: 0, orders: [] });
+        }
+      } else if (id && id.trim()) {
+        query.id = id.trim();
+      } else if (phone && phone.trim()) {
+        const cleanPhone = phone.trim().replace(/\D/g, "");
+        if (cleanPhone.length >= 10) {
+          query.phone = cleanPhone;
         } else {
           return NextResponse.json({ success: true, count: 0, orders: [] });
         }
       } else {
-        return NextResponse.json({ success: true, count: 0, orders: [] });
+        // Fallback: check device cookie if present
+        const placedCookie = req.cookies.get("playo_placed_order_ids")?.value;
+        if (placedCookie) {
+          const orderIds = placedCookie.split(",").map((s) => s.trim()).filter(Boolean);
+          if (orderIds.length > 0) {
+            query.id = { $in: orderIds };
+          } else {
+            return NextResponse.json({ success: true, count: 0, orders: [] });
+          }
+        } else {
+          // Never dump all orders to anonymous requests
+          return NextResponse.json({ success: true, count: 0, orders: [] });
+        }
       }
     }
 
@@ -127,6 +148,7 @@ export async function POST(req: NextRequest) {
     // Any price or discount submitted by client is DISCARDED. Prices are retrieved solely from DB!
     const validatedItems: any[] = [];
     let subtotal = 0;
+    let totalDeliveryFee = 0;
 
     for (const item of items) {
       const qty = Math.floor(Number(item.quantity || item.qty || 1));
@@ -163,18 +185,21 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      // Authoritative Price from DB
+      // Authoritative Price & Delivery Fee from DB
       const verifiedPrice = Number(prod.price) || 0;
+      const verifiedDeliveryFee = typeof prod.deliveryFee === "number" ? Math.max(0, prod.deliveryFee) : 0;
       validatedItems.push({
         id: prod.id,
         name: prod.name,
         category: prod.category || prod.categorySlug,
         imageUrl: prod.imageUrl || prod.images?.[0] || "/images/catalog/porsche-drift-rc.jpg",
         price: verifiedPrice,
+        deliveryFee: verifiedDeliveryFee,
         quantity: qty,
         specs: item.specs || (prod.scale ? `Scale: ${prod.scale}` : "Standard"),
       });
       subtotal += verifiedPrice * qty;
+      totalDeliveryFee += verifiedDeliveryFee * qty;
     }
 
     // 3. Calculate Offer Discount strictly from MongoDB active rules
@@ -195,7 +220,7 @@ export async function POST(req: NextRequest) {
       console.warn("Could not calculate offer discount:", e);
     }
 
-    const total = Math.max(0, subtotal - discount);
+    const total = Math.max(0, subtotal - discount + totalDeliveryFee);
     const orderId = `PLY-${Date.now().toString().slice(-6)}`;
 
     // 4. Concurrency-Safe Atomic Stock Reservation
@@ -294,7 +319,7 @@ export async function POST(req: NextRequest) {
       items: validatedItems,
       subtotal,
       discount,
-      deliveryFee: 0,
+      deliveryFee: totalDeliveryFee,
       total,
     };
 

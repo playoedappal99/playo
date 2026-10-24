@@ -81,6 +81,7 @@ export default function CheckoutSection({
           price: customProduct.price || 0,
           quantity: 1,
           specs: customProduct.scale ? `Scale: ${customProduct.scale}` : "Standard",
+          deliveryFee: typeof customProduct.deliveryFee === "number" ? customProduct.deliveryFee : 0,
         },
       ];
     }
@@ -93,6 +94,7 @@ export default function CheckoutSection({
         price: ci.product.price || 0,
         quantity: ci.quantity || 1,
         specs: ci.product.scale ? `Scale: ${ci.product.scale}` : "Standard",
+        deliveryFee: typeof ci.product.deliveryFee === "number" ? ci.product.deliveryFee : 0,
       }));
     }
     return [
@@ -104,6 +106,7 @@ export default function CheckoutSection({
         price: 1990,
         quantity: 1,
         specs: "Scale: 1:24 • Color: VIOLET",
+        deliveryFee: 0,
       },
     ];
   }, [customProduct, cartItems]);
@@ -168,7 +171,11 @@ export default function CheckoutSection({
     return 0;
   }, [activeOffer, subtotal]);
 
-  const totalAmount = Math.max(0, subtotal - discountAmount);
+  const totalDeliveryFee = useMemo(() => {
+    return checkoutItems.reduce((sum, it) => sum + (it.deliveryFee || 0) * it.quantity, 0);
+  }, [checkoutItems]);
+
+  const totalAmount = Math.max(0, subtotal - discountAmount + totalDeliveryFee);
   const totalItemCount = useMemo(() => {
     return checkoutItems.reduce((sum, it) => sum + it.quantity, 0);
   }, [checkoutItems]);
@@ -252,7 +259,21 @@ export default function CheckoutSection({
         return;
       }
 
-      setPlacedOrderId(data.order.id);
+      const placedId = data.order.id;
+      setPlacedOrderId(placedId);
+
+      // Save order ID to this device's localStorage for isolated tracking
+      try {
+        const stored = localStorage.getItem("playo_placed_order_ids");
+        const list: string[] = stored ? JSON.parse(stored) : [];
+        if (!list.includes(placedId)) {
+          list.unshift(placedId);
+          localStorage.setItem("playo_placed_order_ids", JSON.stringify(list));
+        }
+      } catch (e) {
+        console.warn("Could not save order ID to device storage:", e);
+      }
+
       setIsProcessing(false);
       setOrderSuccess(true);
       clearCart();
@@ -466,6 +487,15 @@ export default function CheckoutSection({
                       <span>-₹{discountAmount.toLocaleString("en-IN")}</span>
                     </div>
                   )}
+
+                  <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-xs text-gray-600 font-medium">
+                    <span>Doorstep Delivery (Kerala)</span>
+                    {totalDeliveryFee > 0 ? (
+                      <span className="font-bold text-gray-900">+₹{totalDeliveryFee.toLocaleString("en-IN")}</span>
+                    ) : (
+                      <span className="font-bold text-emerald-600">FREE</span>
+                    )}
+                  </div>
 
                   <div className="pt-2.5 border-t border-gray-100 flex items-center justify-between text-xs sm:text-sm font-extrabold text-gray-900">
                     <span>Total Amount</span>

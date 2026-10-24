@@ -94,6 +94,7 @@ export async function GET(
         galleryImages: gallery,
         imageUrl: allImgs[0] || product.imageUrl || "/images/catalog/porsche-drift-rc.jpg",
         stockCount: typeof product.stockCount === "number" ? product.stockCount : 0,
+        deliveryFee: typeof product.deliveryFee === "number" ? product.deliveryFee : 0,
         inStock: (typeof product.stockCount === "number" ? product.stockCount : 0) > 0,
       },
     }, {
@@ -138,6 +139,7 @@ export async function PUT(
       colorMappings,
       images,
       imageUrl,
+      deliveryFee,
     } = body;
 
     if (!name || typeof name !== "string" || !name.trim()) {
@@ -233,6 +235,7 @@ export async function PUT(
       category: catName,
       categorySlug: catSlug,
       price: numPrice,
+      deliveryFee: deliveryFee !== undefined && deliveryFee !== "" ? Math.max(0, Number(deliveryFee) || 0) : 0,
       stockCount: numStock,
       inStock: numStock > 0,
       scale: scale && typeof scale === "string" ? scale.trim() : undefined,

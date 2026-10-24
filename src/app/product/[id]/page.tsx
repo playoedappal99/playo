@@ -172,6 +172,7 @@ export default async function ProductDetailPage({
     galleryImages: gallery,
     imageUrl: allImgs[0] || plainProduct.imageUrl || "/images/catalog/porsche-drift-rc.jpg",
     stockCount: typeof plainProduct.stockCount === "number" ? plainProduct.stockCount : 0,
+    deliveryFee: typeof plainProduct.deliveryFee === "number" ? plainProduct.deliveryFee : 0,
     inStock: (typeof plainProduct.stockCount === "number" ? plainProduct.stockCount : 0) > 0,
   };
 

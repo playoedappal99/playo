@@ -63,7 +63,7 @@ export default function SpecialOfferBanner({ onShopNow }: { onShopNow: () => voi
                 <div className="space-y-2 text-xs text-gray-300">
                   <div className="flex items-center gap-2.5">
                     <Truck className="w-4 h-4 text-[#FF9800] shrink-0" />
-                    <span>Free Doorstep Delivery in Kerala</span>
+                    <span>Safe Doorstep Delivery across Kerala</span>
                   </div>
                   <div className="flex items-center gap-2.5">
                     <ShieldCheck className="w-4 h-4 text-[#16A34A] shrink-0" />

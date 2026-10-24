@@ -12,6 +12,7 @@ import {
   Maximize2,
   X,
   AlertCircle,
+  Truck,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -418,6 +419,21 @@ export default function ProductDetailClient({
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
                     <Check className="w-3.5 h-3.5 text-emerald-600" />
                     <span>In Stock ({maxStock} available)</span>
+                  </span>
+                )}
+              </div>
+
+              {/* Delivery Fee Info */}
+              <div className="mt-2.5">
+                {typeof product.deliveryFee === "number" && product.deliveryFee > 0 ? (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-sky-50 text-sky-800 border border-sky-200">
+                    <Truck className="w-3.5 h-3.5 text-sky-600" />
+                    <span>Delivery Fee: ₹{product.deliveryFee.toLocaleString("en-IN")}</span>
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                    <Truck className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Free Doorstep Delivery</span>
                   </span>
                 )}
               </div>
