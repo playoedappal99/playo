@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { getDatabase } from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 import ProductDetailClient from "./ProductDetailClient";
@@ -12,13 +13,23 @@ import {
 
 export const revalidate = 60;
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}): Promise<Metadata> {
+export async function generateStaticParams() {
   try {
-    const { id } = await params;
+    const db = await getDatabase();
+    const products = await db
+      .collection("products")
+      .find({}, { projection: { id: 1 } })
+      .limit(30)
+      .toArray();
+    return products.map((p) => ({ id: p.id || String(p._id) }));
+  } catch {
+    return [];
+  }
+}
+
+// React cache deduplicates DB queries between generateMetadata and ProductDetailPage
+const getProduct = cache(async (id: string) => {
+  try {
     const db = await getDatabase();
 
     let query: Record<string, unknown> = { id };
@@ -26,17 +37,42 @@ export async function generateMetadata({
       query = { $or: [{ id }, { _id: new ObjectId(id) }] };
     }
 
-    let product = await db.collection("products").findOne(query);
-    if (!product) {
-      product = await db.collection("products").findOne({
-        name: new RegExp(`^${id.replace(/-/g, " ")}$`, "i"),
+    let rawProduct = await db.collection("products").findOne(query);
+
+    if (!rawProduct) {
+      rawProduct = await db.collection("products").findOne({
+        $or: [
+          { id: { $regex: new RegExp(id, "i") } },
+          { name: new RegExp(`^${id.replace(/-/g, " ")}$`, "i") },
+        ],
       });
     }
+
+    if (!rawProduct) {
+      rawProduct = await db.collection("products").findOne({});
+    }
+
+    return rawProduct;
+  } catch (err) {
+    console.error("Error retrieving product:", err);
+    return null;
+  }
+});
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  try {
+    const { id } = await params;
+    const product = await getProduct(id);
 
     if (!product) {
       return {
         title: "Product Details | PLAYO Edappal Toy Showroom",
-        description: "Explore kids' ride-on cars, bikes, jeeps, and toys at PLAYO Edappal showroom near Nesto Hypermarket.",
+        description:
+          "Explore kids' ride-on cars, bikes, jeeps, and toys at PLAYO Edappal showroom near Nesto Hypermarket.",
         alternates: {
           canonical: `${BUSINESS_INFO.url}/catalog`,
         },
@@ -44,7 +80,10 @@ export async function generateMetadata({
     }
 
     const prodId = product.id || String(product._id);
-    const prodImg = product.imageUrl || product.images?.[0] || "/images/catalog/porsche-drift-rc.jpg";
+    const prodImg =
+      product.imageUrl ||
+      product.images?.[0] ||
+      "/images/catalog/porsche-drift-rc.jpg";
 
     return {
       title: `${product.name} | PLAYO Toy Shop Edappal`,
@@ -62,7 +101,9 @@ export async function generateMetadata({
         url: `${BUSINESS_INFO.url}/product/${prodId}`,
         images: [
           {
-            url: prodImg.startsWith("http") ? prodImg : `${BUSINESS_INFO.url}${prodImg}`,
+            url: prodImg.startsWith("http")
+              ? prodImg
+              : `${BUSINESS_INFO.url}${prodImg}`,
             alt: `${product.name} - PLAYO Edappal`,
           },
         ],
@@ -81,36 +122,17 @@ export default async function ProductDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const db = await getDatabase();
-
-  let query: Record<string, unknown> = { id };
-  if (ObjectId.isValid(id)) {
-    query = { $or: [{ id }, { _id: new ObjectId(id) }] };
-  }
-
-  let rawProduct = await db.collection("products").findOne(query);
-
-  if (!rawProduct) {
-    // Try matching slug or name
-    rawProduct = await db.collection("products").findOne({
-      $or: [
-        { id: { $regex: new RegExp(id, "i") } },
-        { name: new RegExp(`^${id.replace(/-/g, " ")}$`, "i") },
-      ],
-    });
-  }
-
-  if (!rawProduct) {
-    // Fallback to first available product in showroom if any exist
-    rawProduct = await db.collection("products").findOne({});
-  }
+  const rawProduct = await getProduct(id);
 
   if (!rawProduct) {
     return (
       <div className="min-h-screen bg-white flex flex-col items-center justify-center p-8 font-sans">
-        <h2 className="text-lg font-bold text-slate-800 mb-2">Product Not Found</h2>
+        <h2 className="text-lg font-bold text-slate-800 mb-2">
+          Product Not Found
+        </h2>
         <p className="text-xs text-slate-500 mb-4">
-          The toy you requested does not exist or has been removed from inventory.
+          The toy you requested does not exist or has been removed from
+          inventory.
         </p>
         <Link
           href="/catalog"
@@ -123,28 +145,38 @@ export default async function ProductDetailPage({
   }
 
   // Format images and gallery
-  const allImgs: string[] = Array.isArray(rawProduct.images) ? [...rawProduct.images] : [];
+  const allImgs: string[] = Array.isArray(rawProduct.images)
+    ? [...rawProduct.images]
+    : [];
   if (rawProduct.imageUrl && !allImgs.includes(rawProduct.imageUrl)) {
     allImgs.unshift(rawProduct.imageUrl);
   }
   if (Array.isArray(rawProduct.colorMappings)) {
-    rawProduct.colorMappings.forEach((cm: { color: string; images?: string[] }) => {
-      if (Array.isArray(cm.images)) {
-        cm.images.forEach((url: string) => {
-          if (url && typeof url === "string" && !allImgs.includes(url)) {
-            allImgs.push(url);
-          }
-        });
+    rawProduct.colorMappings.forEach(
+      (cm: { color: string; images?: string[] }) => {
+        if (Array.isArray(cm.images)) {
+          cm.images.forEach((url: string) => {
+            if (url && typeof url === "string" && !allImgs.includes(url)) {
+              allImgs.push(url);
+            }
+          });
+        }
       }
-    });
+    );
   }
 
   if (allImgs.length === 0) {
     allImgs.push("/images/catalog/porsche-drift-rc.jpg");
   }
 
-  const gallery: { url: string; label: string; angleName?: string; color?: string }[] =
-    Array.isArray(rawProduct.galleryImages) && rawProduct.galleryImages.length > 0
+  const gallery: {
+    url: string;
+    label: string;
+    angleName?: string;
+    color?: string;
+  }[] =
+    Array.isArray(rawProduct.galleryImages) &&
+    rawProduct.galleryImages.length > 0
       ? [...rawProduct.galleryImages]
       : [];
 
@@ -159,24 +191,27 @@ export default async function ProductDetailPage({
   });
 
   if (Array.isArray(rawProduct.colorMappings)) {
-    rawProduct.colorMappings.forEach((cm: { color: string; images?: string[] }) => {
-      if (Array.isArray(cm.images)) {
-        cm.images.forEach((url: string) => {
-          const found = gallery.find((g) => g.url === url);
-          if (found) {
-            found.color = cm.color;
-            if (!found.label.includes(cm.color)) {
-              found.label = `${rawProduct.name} - ${cm.color}`;
+    rawProduct.colorMappings.forEach(
+      (cm: { color: string; images?: string[] }) => {
+        if (Array.isArray(cm.images)) {
+          cm.images.forEach((url: string) => {
+            const found = gallery.find((g) => g.url === url);
+            if (found) {
+              found.color = cm.color;
+              if (!found.label.includes(cm.color)) {
+                found.label = `${rawProduct.name} - ${cm.color}`;
+              }
             }
-          }
-        });
+          });
+        }
       }
-    });
+    );
   }
 
   // Fetch up to 4 related products directly in database
   let relatedDocs: Record<string, unknown>[] = [];
   try {
+    const db = await getDatabase();
     relatedDocs = await db
       .collection("products")
       .find({ id: { $ne: rawProduct.id } })
@@ -197,20 +232,41 @@ export default async function ProductDetailPage({
     id: plainProduct.id || String(plainProduct._id),
     images: allImgs,
     galleryImages: gallery,
-    imageUrl: allImgs[0] || plainProduct.imageUrl || "/images/catalog/porsche-drift-rc.jpg",
-    stockCount: typeof plainProduct.stockCount === "number" ? plainProduct.stockCount : 0,
-    deliveryFee: typeof plainProduct.deliveryFee === "number" ? plainProduct.deliveryFee : 0,
-    inStock: (typeof plainProduct.stockCount === "number" ? plainProduct.stockCount : 0) > 0,
+    imageUrl:
+      allImgs[0] ||
+      plainProduct.imageUrl ||
+      "/images/catalog/porsche-drift-rc.jpg",
+    stockCount:
+      typeof plainProduct.stockCount === "number" ? plainProduct.stockCount : 0,
+    deliveryFee:
+      typeof plainProduct.deliveryFee === "number"
+        ? plainProduct.deliveryFee
+        : 0,
+    inStock:
+      (typeof plainProduct.stockCount === "number"
+        ? plainProduct.stockCount
+        : 0) > 0,
   };
 
-  const formattedRelated: ProductItem[] = plainRelated.map((p: Record<string, unknown> & { _id: unknown; id?: string; imageUrl?: string; images?: string[]; stockCount?: number }) => ({
-    ...p,
-    _id: String(p._id),
-    id: p.id || String(p._id),
-    imageUrl: p.imageUrl || p.images?.[0] || "/images/catalog/porsche-drift-rc.jpg",
-    stockCount: typeof p.stockCount === "number" ? p.stockCount : 0,
-    inStock: (typeof p.stockCount === "number" ? p.stockCount : 0) > 0,
-  }));
+  const formattedRelated: ProductItem[] = plainRelated.map(
+    (
+      p: Record<string, unknown> & {
+        _id: unknown;
+        id?: string;
+        imageUrl?: string;
+        images?: string[];
+        stockCount?: number;
+      }
+    ) => ({
+      ...p,
+      _id: String(p._id),
+      id: p.id || String(p._id),
+      imageUrl:
+        p.imageUrl || p.images?.[0] || "/images/catalog/porsche-drift-rc.jpg",
+      stockCount: typeof p.stockCount === "number" ? p.stockCount : 0,
+      inStock: (typeof p.stockCount === "number" ? p.stockCount : 0) > 0,
+    })
+  );
 
   const productSchema = getProductSchema({
     id: formattedProduct.id,

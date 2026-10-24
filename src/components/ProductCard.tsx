@@ -64,6 +64,7 @@ export default function ProductCard({
         {/* Top Image Container */}
         <Link
           href={`/product/${product.id}`}
+          prefetch={true}
           className="relative aspect-[4/3] w-full bg-slate-100 flex items-center justify-center overflow-hidden border-b border-gray-100 cursor-pointer block"
         >
           {/* Main Product Image - Fills entire container edge-to-edge without blank margins */}
@@ -146,7 +147,7 @@ export default function ProductCard({
           </div>
 
           {/* Product Name (14px mobile, 16px desktop, 2-line clamp) */}
-          <Link href={`/product/${product.id}`} className="block">
+          <Link href={`/product/${product.id}`} prefetch={true} className="block">
             <h3 className="text-sm sm:text-base font-semibold text-[#0D1B2A] leading-snug line-clamp-2 min-h-[2.25rem] sm:min-h-[2.75rem] group-hover:text-sky-600 transition-colors cursor-pointer">
               {product.name}
             </h3>

@@ -22,6 +22,21 @@ export interface CheckoutSectionProps {
   isModal?: boolean;
 }
 
+const loadRazorpayScript = (): Promise<boolean> => {
+  return new Promise((resolve) => {
+    if (typeof window !== "undefined" && (window as any).Razorpay) {
+      resolve(true);
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
+
 const INDIAN_STATES = [
   "Andaman and Nicobar Islands",
   "Andhra Pradesh",
@@ -154,11 +169,16 @@ export default function CheckoutSection({
       .catch((err) => console.error("Error loading offers:", err));
   }, []);
 
-  // Razorpay payment simulation states
+  // Razorpay payment integration states
+  const [paymentId, setPaymentId] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
   const [placedOrderId, setPlacedOrderId] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+
+  useEffect(() => {
+    loadRazorpayScript();
+  }, []);
 
   const subtotal = useMemo(() => {
     return checkoutItems.reduce((sum, it) => sum + it.price * it.quantity, 0);
@@ -225,7 +245,16 @@ export default function CheckoutSection({
         landmark.trim() ? `, Near ${landmark.trim()}` : ""
       }, ${city.trim()}, ${state.trim()} - ${pinCode.trim()}`;
 
-      const res = await fetch("/api/orders", {
+      // 1. Ensure Razorpay checkout script is loaded
+      const isLoaded = await loadRazorpayScript();
+      if (!isLoaded || !(window as any).Razorpay) {
+        setErrorMsg("Could not load Razorpay payment gateway. Please check your internet connection.");
+        setIsProcessing(false);
+        return;
+      }
+
+      // 2. Initialize Authoritative Razorpay order on backend (stock validated & server-verified)
+      const res = await fetch("/api/razorpay/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -233,12 +262,7 @@ export default function CheckoutSection({
           phone: mobileNumber.trim(),
           email: emailAddress.trim(),
           deliveryAddress: fullAddress,
-          shippingOption:
-            shippingOption === "indian_post"
-              ? "Indian Post (Door-to-Door Delivery)"
-              : "Speed & Safe Courier Service",
-          deliveryInstructions: deliveryInstructions.trim(),
-          paymentMethod: "Razorpay (UPI / NetBanking)",
+          shippingOption,
           items: checkoutItems.map((it) => ({
             id: it.id,
             name: it.name,
@@ -254,29 +278,122 @@ export default function CheckoutSection({
       const data = await res.json();
 
       if (!res.ok || !data.success) {
-        setErrorMsg(data.error || "Failed to process order. Please try again.");
+        setErrorMsg(data.error || "Failed to initialize payment. Please try again.");
         setIsProcessing(false);
         return;
       }
 
-      const placedId = data.order.id;
-      setPlacedOrderId(placedId);
+      // 3. Launch Official Razorpay Modal
+      const options = {
+        key:
+          data.keyId ||
+          process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ||
+          "rzp_test_TrhFXfztkQI4Di",
+        amount: data.amount,
+        currency: data.currency || "INR",
+        name: "Playo Edappal",
+        description: `Order Payment (${checkoutItems.length} item${
+          checkoutItems.length > 1 ? "s" : ""
+        })`,
+        order_id: data.orderId,
+        prefill: {
+          name: fullName.trim(),
+          email: emailAddress.trim(),
+          contact: mobileNumber.trim(),
+        },
+        theme: {
+          color: "#0284c7",
+        },
+        modal: {
+          ondismiss: function () {
+            setIsProcessing(false);
+            setErrorMsg(
+              "Payment window was closed or cancelled. Your order was NOT placed."
+            );
+          },
+        },
+        handler: async function (paymentResponse: any) {
+          try {
+            setIsProcessing(true);
+            const verifyRes = await fetch("/api/razorpay/verify-payment", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                razorpay_order_id: paymentResponse.razorpay_order_id,
+                razorpay_payment_id: paymentResponse.razorpay_payment_id,
+                razorpay_signature: paymentResponse.razorpay_signature,
+                customerName: fullName.trim(),
+                phone: mobileNumber.trim(),
+                email: emailAddress.trim(),
+                deliveryAddress: fullAddress,
+                shippingOption,
+                deliveryInstructions: deliveryInstructions.trim(),
+                items: checkoutItems.map((it) => ({
+                  id: it.id,
+                  name: it.name,
+                  category: it.category,
+                  imageUrl: it.imageUrl,
+                  price: it.price,
+                  quantity: it.quantity,
+                  specs: it.specs,
+                })),
+              }),
+            });
 
-      // Save order ID to this device's localStorage for isolated tracking
-      try {
-        const stored = localStorage.getItem("playo_placed_order_ids");
-        const list: string[] = stored ? JSON.parse(stored) : [];
-        if (!list.includes(placedId)) {
-          list.unshift(placedId);
-          localStorage.setItem("playo_placed_order_ids", JSON.stringify(list));
-        }
-      } catch (e) {
-        console.warn("Could not save order ID to device storage:", e);
-      }
+            const verifyData = await verifyRes.json();
+            if (!verifyRes.ok || !verifyData.success) {
+              setErrorMsg(
+                verifyData.error ||
+                  "Payment verification failed. Please contact Playo Edappal support."
+              );
+              setIsProcessing(false);
+              return;
+            }
 
+            const placedId = verifyData.order.id;
+            setPlacedOrderId(placedId);
+            setPaymentId(paymentResponse.razorpay_payment_id);
+
+            try {
+              const stored = localStorage.getItem("playo_placed_order_ids");
+              const list: string[] = stored ? JSON.parse(stored) : [];
+              if (!list.includes(placedId)) {
+                list.unshift(placedId);
+                localStorage.setItem(
+                  "playo_placed_order_ids",
+                  JSON.stringify(list)
+                );
+              }
+            } catch (e) {
+              console.warn("Could not save order ID to device storage:", e);
+            }
+
+            setIsProcessing(false);
+            setOrderSuccess(true);
+            clearCart();
+          } catch (verifyErr: any) {
+            console.error("Payment verification error:", verifyErr);
+            setErrorMsg(
+              verifyErr.message ||
+                "Failed to verify payment with server. If money was deducted, contact support."
+            );
+            setIsProcessing(false);
+          }
+        },
+      };
+
+      const rzpInstance = new (window as any).Razorpay(options);
+      rzpInstance.on("payment.failed", function (failResponse: any) {
+        console.error("Razorpay payment failed:", failResponse);
+        setIsProcessing(false);
+        setErrorMsg(
+          failResponse.error?.description ||
+            "Payment failed. Your order was NOT placed. Please try again."
+        );
+      });
+
+      rzpInstance.open();
       setIsProcessing(false);
-      setOrderSuccess(true);
-      clearCart();
     } catch (err: any) {
       console.error("Order submit error:", err);
       setErrorMsg(err.message || "Network error. Please try again.");
@@ -301,7 +418,7 @@ export default function CheckoutSection({
       <div className="px-5 sm:px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-white shrink-0 sticky top-0 z-10">
         <div className="flex items-center gap-2.5">
           <h2 className="text-base sm:text-lg font-bold text-gray-900 tracking-tight">
-            Checkout (1 Item)
+            Checkout ({totalItemCount} {totalItemCount === 1 ? "Item" : "Items"})
           </h2>
         </div>
         <button
@@ -396,6 +513,14 @@ export default function CheckoutSection({
                     Razorpay Secure (Paid)
                   </span>
                 </div>
+                {paymentId && (
+                  <div className="flex justify-between">
+                    <span>Razorpay Payment ID:</span>
+                    <span className="font-mono text-xs font-semibold text-gray-800">
+                      {paymentId}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -411,7 +536,7 @@ export default function CheckoutSection({
 
               <a
                 href={`https://wa.me/919605973308?text=${encodeURIComponent(
-                  `Hi Playo Edappal! I just placed order #${placedOrderId} for ${product.name} (₹${totalAmount.toLocaleString(
+                  `Hi Playo Edappal! I just placed order #${placedOrderId}${paymentId ? ` (Payment ID: ${paymentId})` : ""} for ${product.name} (₹${totalAmount.toLocaleString(
                     "en-IN"
                   )}) via Razorpay. Please share dispatch updates!`
                 )}`}
@@ -434,7 +559,7 @@ export default function CheckoutSection({
                 className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-gray-100/60 transition-colors cursor-pointer"
               >
                 <span className="text-xs sm:text-sm font-bold text-gray-900">
-                  Order Summary (1 item)
+                  Order Summary ({totalItemCount} {totalItemCount === 1 ? "item" : "items"})
                 </span>
                 <div className="flex items-center gap-2">
                   <span className="text-xs sm:text-sm font-black text-gray-900">
