@@ -242,7 +242,12 @@ export async function PUT(
       material: material && typeof material === "string" ? material.trim() : undefined,
       description: description && typeof description === "string" ? description.trim() : undefined,
       tag: tag && typeof tag === "string" ? tag.trim() : undefined,
-      availableColors: availableColors && typeof availableColors === "string" ? availableColors.trim() : undefined,
+      availableColors:
+        availableColors && typeof availableColors === "string" && availableColors.trim()
+          ? availableColors.trim()
+          : Array.isArray(colorMappings) && colorMappings.length > 0
+          ? colorMappings.map((cm: any) => cm.color && cm.color.trim()).filter(Boolean).join(", ")
+          : undefined,
       images: allImagesList,
       imageUrl: primaryImg,
       galleryImages,

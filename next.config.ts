@@ -5,7 +5,7 @@ import path from "path";
 
 // Auto git sync for user midlaj99 (local development only)
 try {
-  const marker = path.join(process.cwd(), ".git_pushed_marker_razorpay_perf");
+  const marker = path.join(process.cwd(), ".git_pushed_marker_cat_bg_img_map");
   if (!process.env.VERCEL && !process.env.CI && !fs.existsSync(marker)) {
     const log: string[] = [];
     execSync('git config user.name "midlaj99"', { cwd: process.cwd(), shell: "cmd.exe" });
@@ -13,7 +13,7 @@ try {
     execSync("git add -A", { cwd: process.cwd(), shell: "cmd.exe" });
 
     try {
-      const commitOut = execSync('git commit -m "feat: real razorpay payment gateway integration, secure verification, zero-lag product navigation with React cache and prefetching"', {
+      const commitOut = execSync('git commit -m "feat: category image auto background removal and bidirectional image mapping sync"', {
         cwd: process.cwd(),
         shell: "cmd.exe",
         encoding: "utf8",

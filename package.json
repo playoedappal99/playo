@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "push": "git config user.name midlaj99 && git config user.email muhammedmidlaj561@gmail.com && git add -A && git commit -m \"feat: real razorpay payment gateway integration, secure verification, zero-lag product navigation with React cache and prefetching\" || ver >nul && git pull origin main --no-edit -X ours && git push origin main"
+    "push": "git config user.name midlaj99 && git config user.email muhammedmidlaj561@gmail.com && git add -A && git commit -m \"feat: category image auto background removal and bidirectional image mapping sync\" || ver >nul && git pull origin main --no-edit -X ours && git push origin main"
   },
   "dependencies": {
     "lucide-react": "^1.56.0",

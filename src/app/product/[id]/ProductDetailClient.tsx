@@ -97,7 +97,24 @@ export default function ProductDetailClient({
       product.colorMappings.forEach((cm: { color: string; images?: string[] }) => {
         if (Array.isArray(cm.images)) {
           cm.images.forEach((url: string, cIdx: number) => {
-            if (url && typeof url === "string" && !seenUrls.has(url)) {
+            if (url && typeof url === "string") {
+              const existing = list.find((g) => g.url === url);
+              if (existing) {
+                existing.color = cm.color;
+                if (!existing.label.includes(cm.color)) {
+                  existing.label = `${product.name} - ${cm.color}`;
+                }
+              } else if (!seenUrls.has(url)) {
+                seenUrls.add(url);
+                list.push({
+                  url,
+                  label: `${product.name} - ${cm.color || "Color"} (View ${cIdx + 1})`,
+                  angleName: cm.color ? `${cm.color}` : `Color ${cIdx + 1}`,
+                  color: cm.color,
+                });
+              }
+            }
+            if (false) {
               seenUrls.add(url);
               list.push({
                 url,
@@ -133,7 +150,52 @@ export default function ProductDetailClient({
     }
   }, [galleryList, activeImageUrl]);
 
-  // Colors list from DB
+  // Colors list from DB - automatically includes all colorMappings so mapped colors are interactive
+  const availableColors = useMemo(() => {
+    if (!product) return [{ name: "Standard", inStock: true, imageIndex: 0 }];
+
+    const colorList: { name: string; inStock: boolean; imageIndex: number }[] = [];
+    const seenColors = new Set<string>();
+
+    const addColor = (name: any) => {
+      if (!name || typeof name !== "string") return;
+      const clean = name.trim();
+      const upper = clean.toUpperCase();
+      if (clean && !seenColors.has(upper)) {
+        seenColors.add(upper);
+        colorList.push({ name: upper, inStock: true, imageIndex: 0 });
+      }
+    };
+
+    // 1. Add from colorMappings
+    if (Array.isArray(product.colorMappings)) {
+      product.colorMappings.forEach((cm) => {
+        if (cm && cm.color) addColor(cm.color);
+      });
+    }
+
+    // 2. Add from availableColors
+    if (Array.isArray(product.availableColors)) {
+      product.availableColors.forEach((c) => {
+        if (typeof c === "string") addColor(c);
+        else if (c && typeof c === "object" && (c as any).name) addColor((c as any).name);
+      });
+    } else if (typeof product.availableColors === "string" && product.availableColors.trim()) {
+      product.availableColors.split(",").forEach((c) => addColor(c));
+    }
+
+    // 3. Add from product.color
+    if (product.color) {
+      addColor(product.color);
+    }
+
+    return colorList.length > 0 ? colorList : [{ name: "STANDARD", inStock: true, imageIndex: 0 }];
+  }, [product]);
+
+  /* old_colors_start
+  if (old_availableColors) {
+    return [];
+  }
   const availableColors = useMemo(() => {
     if (!product) return [{ name: "Standard", inStock: true, imageIndex: 0 }];
     if (Array.isArray(product.availableColors) && product.availableColors.length > 0) {
@@ -151,6 +213,7 @@ export default function ProductDetailClient({
     return [{ name: "STANDARD", inStock: true, imageIndex: 0 }];
   }, [product]);
 
+  */
   // Handle color selection: changes color and switches hero image to that color variant if available
   const handleSelectColor = (colorName: string) => {
     setSelectedColor(colorName);
@@ -171,6 +234,13 @@ export default function ProductDetailClient({
     setActiveImageUrl(item.url);
     if (item.color) {
       setSelectedColor(item.color.toUpperCase());
+    } else if (Array.isArray(product?.colorMappings)) {
+      const found = product.colorMappings.find(
+        (cm) => Array.isArray(cm.images) && cm.images.includes(item.url)
+      );
+      if (found && found.color) {
+        setSelectedColor(found.color.toUpperCase());
+      }
     }
   };
 
@@ -207,12 +277,22 @@ export default function ProductDetailClient({
 
   const handleAddToCart = () => {
     if (!product || isOutOfStock) return;
-    addToCart(product, true, quantity);
+    const variantProduct = {
+      ...product,
+      color: selectedColor || product.color,
+      imageUrl: activeImageUrl || product.imageUrl,
+    };
+    addToCart(variantProduct, true, quantity);
   };
 
   const handleBuyNow = () => {
     if (!product || isOutOfStock) return;
-    addToCart(product, false, quantity);
+    const variantProduct = {
+      ...product,
+      color: selectedColor || product.color,
+      imageUrl: activeImageUrl || product.imageUrl,
+    };
+    addToCart(variantProduct, false, quantity);
     router.push("/checkout");
   };
 
