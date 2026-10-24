@@ -3,7 +3,7 @@ import HomeClient from "@/components/HomeClient";
 import { ProductItem, CategoryItem } from "@/data/store-data";
 import type { Metadata } from "next";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: "PLAYO Toy Shop in Edappal, Malappuram | Kids' Toys & Ride-On Vehicles",
@@ -23,13 +23,16 @@ export default async function Home() {
     let catError = "";
 
     try {
-      rawProducts = await db.collection("products").find({}).sort({ createdAt: -1 }).toArray();
+      [rawProducts, rawCategories] = await Promise.all([
+        db.collection("products").find({}).sort({ createdAt: -1 }).toArray(),
+        db.collection("categories").find({}).sort({ createdAt: -1 }).toArray(),
+      ]);
     } catch (e: any) {
       console.error("SSR products error:", e);
     }
 
     try {
-      rawCategories = await db.collection("categories").find({}).sort({ createdAt: -1 }).toArray();
+      // Categories already fetched in parallel above
       // Self-healing: persist permanent CDN URL to database if any blob URL is detected
       for (const c of rawCategories) {
         if (c.imageUrl && typeof c.imageUrl === "string" && c.imageUrl.startsWith("blob:")) {

@@ -46,7 +46,8 @@ if (process.env.NODE_ENV === "development") {
   }
   clientPromise = global._mongoClientPromise;
 } else {
-  clientPromise = createClientPromise();
+  if (!global._mongoClientPromise) global._mongoClientPromise = createClientPromise();
+  clientPromise = global._mongoClientPromise;
 }
 
 export default clientPromise;

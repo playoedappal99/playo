@@ -5,7 +5,7 @@ import { Suspense } from "react";
 import { Metadata } from "next";
 import { BUSINESS_INFO, getBreadcrumbSchema } from "@/lib/business-info";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: "Toy Shop in Edappal, Malappuram",
@@ -33,13 +33,16 @@ export default async function CatalogPage() {
     let rawCategories: any[] = [];
 
     try {
-      rawProducts = await db.collection("products").find({}).sort({ createdAt: -1 }).toArray();
+      [rawProducts, rawCategories] = await Promise.all([
+        db.collection("products").find({}).sort({ createdAt: -1 }).toArray(),
+        db.collection("categories").find({}).sort({ createdAt: -1 }).toArray(),
+      ]);
     } catch (e) {
       console.error("Catalog products fetch error:", e);
     }
 
     try {
-      rawCategories = await db.collection("categories").find({}).sort({ createdAt: -1 }).toArray();
+      // Categories already fetched in parallel above
     } catch (e) {
       console.error("Catalog categories fetch error:", e);
     }
