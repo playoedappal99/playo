@@ -288,7 +288,7 @@ export default function CheckoutSection({
         key:
           data.keyId ||
           process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ||
-          "rzp_test_TrhFXfztkQI4Di",
+          "rzp_live_Ts0qA8xL0fOFHL",
         amount: data.amount,
         currency: data.currency || "INR",
         name: "Playo Edappal",
@@ -448,7 +448,7 @@ export default function CheckoutSection({
             <div className="space-y-1.5">
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
                 <Sparkles className="w-3.5 h-3.5 text-emerald-600" /> Payment
-                Successful via Razorpay
+                Verified & Successful
               </span>
               <h3 className="text-2xl font-extrabold text-gray-900">
                 Order Placed Successfully!
@@ -515,7 +515,7 @@ export default function CheckoutSection({
                 </div>
                 {paymentId && (
                   <div className="flex justify-between">
-                    <span>Razorpay Payment ID:</span>
+                    <span>Payment Transaction ID:</span>
                     <span className="font-mono text-xs font-semibold text-gray-800">
                       {paymentId}
                     </span>
@@ -538,7 +538,7 @@ export default function CheckoutSection({
                 href={`https://wa.me/919605973308?text=${encodeURIComponent(
                   `Hi Playo Edappal! I just placed order #${placedOrderId}${paymentId ? ` (Payment ID: ${paymentId})` : ""} for ${product.name} (₹${totalAmount.toLocaleString(
                     "en-IN"
-                  )}) via Razorpay. Please share dispatch updates!`
+                  )}) (Online Paid). Please share dispatch updates!`
                 )}`}
                 target="_blank"
                 rel="noreferrer"
@@ -875,7 +875,7 @@ export default function CheckoutSection({
 
                 <div className="min-w-0 flex-1">
                   <h4 className="text-xs sm:text-sm font-bold text-[#0284c7] leading-tight">
-                    Payment via Razorpay Secure Gateway
+                    Secure Payment (UPI, Cards, NetBanking)
                   </h4>
                   <p className="text-[11px] sm:text-xs text-slate-600 mt-0.5 leading-snug">
                     Supports UPI (GPay, PhonePe, Paytm), Cards, NetBanking, and Wallets.
@@ -891,13 +891,13 @@ export default function CheckoutSection({
                 {isProcessing ? (
                   <>
                     <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                    <span>Verifying stock & connecting to Razorpay...</span>
+                    <span>Connecting to payment gateway...</span>
                   </>
                 ) : (
                   <>
                     <Lock className="w-4 h-4 text-white/90 group-hover:scale-110 transition-transform" />
                     <span>
-                      Pay ₹{totalAmount.toLocaleString("en-IN")} via Razorpay
+                      Pay ₹{totalAmount.toLocaleString("en-IN")}
                     </span>
                     <ArrowRight className="w-4 h-4 ml-1 text-white/80 group-hover:text-white group-hover:translate-x-1 transition-all" />
                   </>

@@ -6,7 +6,7 @@ import crypto from "crypto";
 export const dynamic = "force-dynamic";
 
 const RAZORPAY_KEY_SECRET =
-  process.env.RAZORPAY_KEY_SECRET || "GngcuoTv0ntWWvn1BDL3wOA1";
+  process.env.RAZORPAY_KEY_SECRET || "UXwSzkOr7l4EeIfUrXYH3Rgk";
 
 export async function POST(req: NextRequest) {
   try {
