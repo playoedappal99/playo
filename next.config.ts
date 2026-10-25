@@ -5,7 +5,7 @@ import path from "path";
 
 // Auto git sync for user midlaj99 (local development only)
 try {
-  const marker = path.join(process.cwd(), ".git_pushed_marker_security_seo_notifications_v1");
+  const marker = path.join(process.cwd(), ".git_pushed_marker_fix_admin_useref");
   if (!process.env.VERCEL && !process.env.CI && !fs.existsSync(marker)) {
     const log: string[] = [];
     execSync('git config user.name "midlaj99"', { cwd: process.cwd(), shell: "cmd.exe" });
@@ -13,7 +13,7 @@ try {
     execSync("git add -A", { cwd: process.cwd(), shell: "cmd.exe" });
 
     try {
-      const commitOut = execSync('git commit -m "feat: world-class SEO, branded OG preview & favicon, real-time 3x notification sounds, order email alerts, and cybersecurity hardening"', {
+      const commitOut = execSync('git commit -m "fix: import useRef in admin page and optimize OG metadata"', {
         cwd: process.cwd(),
         shell: "cmd.exe",
         encoding: "utf8",

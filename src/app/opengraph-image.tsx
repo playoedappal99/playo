@@ -1,6 +1,5 @@
 import { ImageResponse } from "next/og";
 
-export const runtime = "edge";
 export const alt = "PLAYO Edappal - Premier Kids' Toy Store & Ride-On Showroom in Malappuram, Kerala";
 export const size = {
   width: 1200,
