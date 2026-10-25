@@ -49,7 +49,7 @@ const getProduct = cache(async (id: string) => {
     }
 
     if (!rawProduct) {
-      rawProduct = await db.collection("products").findOne({});
+      return null;
     }
 
     return rawProduct;

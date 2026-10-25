@@ -49,6 +49,11 @@ export default function ProductCard({
 
   const handleBuyNowClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    try {
+      const payload = JSON.stringify({ product, quantity: 1 });
+      sessionStorage.setItem("playo_direct_checkout", payload);
+      localStorage.setItem("playo_direct_checkout", payload);
+    } catch {}
     onBuyNow(product);
   };
 

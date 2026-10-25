@@ -83,20 +83,53 @@ export default function CheckoutSection({
 }: CheckoutSectionProps) {
   const router = useRouter();
   const { cartItems, clearCart } = useCart();
+  const [directCheckoutItem, setDirectCheckoutItem] = useState<any>(null);
 
-  // Determine items to checkout: if customProduct is passed use it, otherwise use all cart items
+  // Check for direct Buy Now product stored in session/local storage
+  useEffect(() => {
+    try {
+      const stored =
+        sessionStorage.getItem("playo_direct_checkout") ||
+        localStorage.getItem("playo_direct_checkout");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed?.product) {
+          setDirectCheckoutItem({
+            ...parsed.product,
+            quantity: parsed.quantity || 1,
+          });
+        }
+      }
+    } catch (e) {
+      console.warn("Direct checkout parse error:", e);
+    }
+  }, []);
+
+  const activeProduct = customProduct || directCheckoutItem;
+
+  // Determine items to checkout: if activeProduct is passed use it, otherwise use active cart items
   const checkoutItems = useMemo(() => {
-    if (customProduct) {
+    if (activeProduct) {
       return [
         {
-          id: customProduct.id,
-          name: customProduct.name,
-          category: customProduct.category || customProduct.categorySlug,
-          imageUrl: customProduct.imageUrl || "/images/catalog/porsche-drift-rc.jpg",
-          price: customProduct.price || 0,
-          quantity: 1,
-          specs: customProduct.scale ? `Scale: ${customProduct.scale}` : "Standard",
-          deliveryFee: typeof customProduct.deliveryFee === "number" ? customProduct.deliveryFee : 0,
+          id: activeProduct.id,
+          name: activeProduct.name,
+          category: activeProduct.category || activeProduct.categorySlug || "Toys",
+          imageUrl:
+            activeProduct.imageUrl ||
+            activeProduct.images?.[0] ||
+            "/images/playo-logo.png",
+          price: Number(activeProduct.price) || 0,
+          quantity: Number(activeProduct.quantity) || 1,
+          specs: activeProduct.scale
+            ? `Scale: ${activeProduct.scale}`
+            : activeProduct.color
+            ? `Color: ${activeProduct.color}`
+            : "Standard",
+          deliveryFee:
+            typeof activeProduct.deliveryFee === "number"
+              ? activeProduct.deliveryFee
+              : 0,
         },
       ];
     }
@@ -104,29 +137,28 @@ export default function CheckoutSection({
       return cartItems.map((ci) => ({
         id: ci.product.id,
         name: ci.product.name,
-        category: ci.product.category || ci.product.categorySlug,
-        imageUrl: ci.product.imageUrl || "/images/catalog/porsche-drift-rc.jpg",
-        price: ci.product.price || 0,
-        quantity: ci.quantity || 1,
-        specs: ci.product.scale ? `Scale: ${ci.product.scale}` : "Standard",
-        deliveryFee: typeof ci.product.deliveryFee === "number" ? ci.product.deliveryFee : 0,
+        category: ci.product.category || ci.product.categorySlug || "Toys",
+        imageUrl:
+          ci.product.imageUrl ||
+          ci.product.images?.[0] ||
+          "/images/playo-logo.png",
+        price: Number(ci.product.price) || 0,
+        quantity: Number(ci.quantity) || 1,
+        specs: ci.product.scale
+          ? `Scale: ${ci.product.scale}`
+          : ci.product.color
+          ? `Color: ${ci.product.color}`
+          : "Standard",
+        deliveryFee:
+          typeof ci.product.deliveryFee === "number"
+            ? ci.product.deliveryFee
+            : 0,
       }));
     }
-    return [
-      {
-        id: "prod-porsche-rc",
-        name: "PORSCHE DRIFT RC",
-        category: "RC Cars",
-        imageUrl: "/images/catalog/porsche-drift-rc.jpg",
-        price: 1990,
-        quantity: 1,
-        specs: "Scale: 1:24 • Color: VIOLET",
-        deliveryFee: 0,
-      },
-    ];
-  }, [customProduct, cartItems]);
+    return [];
+  }, [activeProduct, cartItems]);
 
-  const product = checkoutItems[0];
+  const product = checkoutItems[0] || ({} as any);
 
   // Form states
   const [fullName, setFullName] = useState("");
@@ -370,6 +402,10 @@ export default function CheckoutSection({
 
             setIsProcessing(false);
             setOrderSuccess(true);
+            try {
+              sessionStorage.removeItem("playo_direct_checkout");
+              localStorage.removeItem("playo_direct_checkout");
+            } catch {}
             clearCart();
           } catch (verifyErr: any) {
             console.error("Payment verification error:", verifyErr);
@@ -405,6 +441,39 @@ export default function CheckoutSection({
     if (onClose) onClose();
     router.push(`/my-orders?id=${placedOrderId}`);
   };
+
+  if (checkoutItems.length === 0 && !orderSuccess) {
+    return (
+      <div
+        className={`w-full bg-white text-gray-900 ${
+          isModal
+            ? "max-w-xl mx-auto rounded-2xl sm:rounded-3xl shadow-2xl border border-gray-200/90 overflow-hidden flex flex-col p-8 sm:p-12 text-center"
+            : "max-w-xl mx-auto rounded-3xl shadow-lg border border-gray-100 p-8 sm:p-12 text-center"
+        }`}
+      >
+        <div className="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mx-auto text-amber-500 mb-4">
+          <ShoppingBag className="w-8 h-8" />
+        </div>
+        <h3 className="text-xl font-black text-slate-900 tracking-tight">Your Cart is Empty</h3>
+        <p className="text-xs sm:text-sm text-slate-500 max-w-sm mx-auto mb-6">
+          No toys selected for checkout. Please browse our showroom catalog and add your favorite items!
+        </p>
+        <div>
+          <button
+            type="button"
+            onClick={() => {
+              if (onClose) onClose();
+              router.push("/catalog");
+            }}
+            className="inline-flex items-center gap-2 px-6 py-3 bg-[#FF9800] hover:bg-[#F57C00] text-white font-extrabold text-sm rounded-xl transition-all shadow-md shadow-orange-500/25 cursor-pointer"
+          >
+            <span>Explore Toy Catalog</span>
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div

@@ -1,4 +1,6 @@
 import { ImageResponse } from "next/og";
+import fs from "fs";
+import path from "path";
 
 export const size = {
   width: 64,
@@ -6,26 +8,31 @@ export const size = {
 };
 export const contentType = "image/png";
 
-export default function Icon() {
+export default async function Icon() {
+  const logoBuffer = fs.readFileSync(
+    path.join(process.cwd(), "public", "images", "playo-logo.png")
+  );
+  const base64 = `data:image/png;base64,${logoBuffer.toString("base64")}`;
+
   return new ImageResponse(
     (
       <div
         style={{
-          fontSize: 34,
-          background: "linear-gradient(135deg, #FF9800 0%, #EA580C 100%)",
           width: "100%",
           height: "100%",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          color: "white",
-          borderRadius: "16px",
-          fontWeight: 900,
-          fontFamily: "system-ui, sans-serif",
-          boxShadow: "0 4px 12px rgba(234, 88, 12, 0.4)",
+          background: "#ffffff",
+          borderRadius: "14px",
+          padding: "4px",
         }}
       >
-        P
+        <img
+          src={base64}
+          alt="Playo Logo"
+          style={{ width: "100%", height: "100%", objectFit: "contain" }}
+        />
       </div>
     ),
     {

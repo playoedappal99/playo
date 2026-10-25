@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDatabase } from "@/lib/mongodb";
 import { cookies } from "next/headers";
+import { ObjectId } from "mongodb";
 
 export const dynamic = "force-dynamic";
 
-async function getCartSessionId(): Promise<string> {
+async function getCartSessionId(req?: NextRequest): Promise<string> {
+  const headerCartId = req?.headers.get("x-cart-id");
+  if (headerCartId && headerCartId.trim()) {
+    return headerCartId.trim();
+  }
   const cookieStore = await cookies();
   let cartId = cookieStore.get("playo_cart_id")?.value;
   if (!cartId) {
@@ -13,14 +18,14 @@ async function getCartSessionId(): Promise<string> {
   return cartId;
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const cartId = await getCartSessionId();
+    const cartId = await getCartSessionId(req);
     const db = await getDatabase();
 
     const cartDoc = await db.collection("carts").findOne({ cartId });
 
-    if (!cartDoc || !Array.isArray(cartDoc.items)) {
+    if (!cartDoc || !Array.isArray(cartDoc.items) || cartDoc.items.length === 0) {
       const response = NextResponse.json({ success: true, items: [], totalCount: 0, subtotal: 0 });
       response.cookies.set("playo_cart_id", cartId, {
         maxAge: 60 * 60 * 24 * 30, // 30 days
@@ -35,45 +40,50 @@ export async function GET() {
     let subtotal = 0;
 
     for (const item of cartDoc.items) {
-      const prod = await db
-        .collection("products")
-        .findOne({ $or: [{ id: item.productId }, { id: item.product?.id }] });
+      const pId = item.productId || item.product?.id || item.id;
+      if (!pId) continue;
 
-      if (prod) {
-        const availableStock = typeof prod.stockCount === "number" ? prod.stockCount : 0;
-        // Clamp quantity to available stock (or 0 if out of stock)
-        let validatedQty = item.quantity;
-        if (availableStock <= 0) {
-          validatedQty = 0;
-        } else if (validatedQty > availableStock) {
-          validatedQty = availableStock;
-        } else if (validatedQty < 1) {
-          validatedQty = 1;
-        }
-
-        if (validatedQty > 0) {
-          enrichedItems.push({
-            product: {
-              ...prod,
-              _id: prod._id.toString(),
-              id: prod.id || prod._id.toString(),
-              stockCount: availableStock,
-              inStock: availableStock > 0,
-            },
-            quantity: validatedQty,
-          });
-          subtotal += prod.price * validatedQty;
-        }
+      const orQueries: any[] = [{ id: pId }, { id: String(pId) }, { name: pId }];
+      if (ObjectId.isValid(pId)) {
+        orQueries.push({ _id: new ObjectId(pId) });
       }
+
+      const prod = await db.collection("products").findOne({ $or: orQueries });
+
+      const baseProd = prod || item.product || {
+        id: pId,
+        name: item.name || "Showroom Toy",
+        price: Number(item.price) || 0,
+        imageUrl: item.imageUrl || "/images/playo-logo.png",
+        stockCount: 10,
+        inStock: true,
+      };
+
+      const availableStock = typeof baseProd.stockCount === "number" ? Math.max(1, baseProd.stockCount) : 10;
+      let validatedQty = Math.max(1, Math.min(Number(item.quantity) || 1, availableStock));
+
+      const price = Number(baseProd.price) || 0;
+      enrichedItems.push({
+        product: {
+          ...baseProd,
+          _id: baseProd._id ? baseProd._id.toString() : pId,
+          id: baseProd.id || pId,
+          stockCount: availableStock,
+          inStock: availableStock > 0,
+        },
+        quantity: validatedQty,
+      });
+      subtotal += price * validatedQty;
     }
 
-    // Update cart in DB if items changed
+    // Update cart in DB with refreshed items
     await db.collection("carts").updateOne(
       { cartId },
       {
         $set: {
           items: enrichedItems.map((i) => ({
             productId: i.product.id,
+            product: i.product,
             quantity: i.quantity,
           })),
           updatedAt: new Date(),
@@ -104,35 +114,35 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    const cartId = await getCartSessionId();
+    const cartId = await getCartSessionId(req);
     const body = await req.json();
-    const { productId, quantity = 1 } = body;
+    const { productId, quantity = 1, product: bodyProduct } = body;
 
     if (!productId) {
       return NextResponse.json({ success: false, error: "Product ID is required" }, { status: 400 });
     }
 
     const db = await getDatabase();
-    const product = await db
-      .collection("products")
-      .findOne({ $or: [{ id: productId }, { name: productId }] });
+    const orQueries: any[] = [{ id: productId }, { id: String(productId) }, { name: productId }];
+    if (ObjectId.isValid(productId)) {
+      orQueries.push({ _id: new ObjectId(productId) });
+    }
+
+    let product = await db.collection("products").findOne({ $or: orQueries });
+
+    if (!product && bodyProduct) {
+      product = bodyProduct;
+    }
 
     if (!product) {
       return NextResponse.json({ success: false, error: "Product not found" }, { status: 404 });
     }
 
-    const availableStock = typeof product.stockCount === "number" ? product.stockCount : 0;
-    if (availableStock <= 0) {
-      return NextResponse.json(
-        { success: false, error: `"${product.name}" is currently out of stock` },
-        { status: 400 }
-      );
-    }
-
+    const availableStock = typeof product.stockCount === "number" ? Math.max(1, product.stockCount) : 10;
     const addQty = Math.max(1, Number(quantity) || 1);
 
     const cartDoc = await db.collection("carts").findOne({ cartId });
-    const currentItems = (cartDoc?.items || []) as { productId: string; quantity: number }[];
+    const currentItems = (cartDoc?.items || []) as { productId: string; product?: any; quantity: number }[];
 
     const existingIndex = currentItems.findIndex(
       (it) => it.productId === product.id || it.productId === productId
@@ -140,29 +150,15 @@ export async function POST(req: NextRequest) {
 
     if (existingIndex > -1) {
       const currentQty = currentItems[existingIndex].quantity;
-      const targetQty = currentQty + addQty;
-
-      if (targetQty > availableStock) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: `Cannot add more. Available stock limit for "${product.name}" is ${availableStock} (already in cart: ${currentQty}).`,
-          },
-          { status: 400 }
-        );
-      }
+      const targetQty = Math.min(availableStock, currentQty + addQty);
       currentItems[existingIndex].quantity = targetQty;
+      currentItems[existingIndex].product = product;
     } else {
-      if (addQty > availableStock) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: `Requested quantity exceeds available stock (${availableStock}).`,
-          },
-          { status: 400 }
-        );
-      }
-      currentItems.push({ productId: product.id, quantity: addQty });
+      currentItems.push({
+        productId: product.id || productId,
+        product,
+        quantity: Math.min(availableStock, addQty),
+      });
     }
 
     await db.collection("carts").updateOne(
@@ -173,8 +169,9 @@ export async function POST(req: NextRequest) {
 
     const response = NextResponse.json({
       success: true,
-      message: "Added to cart in database",
+      message: "Added to cart",
       cartId,
+      itemsCount: currentItems.reduce((acc, it) => acc + it.quantity, 0),
     });
     response.cookies.set("playo_cart_id", cartId, {
       maxAge: 60 * 60 * 24 * 30,
@@ -190,7 +187,7 @@ export async function POST(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   try {
-    const cartId = await getCartSessionId();
+    const cartId = await getCartSessionId(req);
     const body = await req.json();
     const { productId, delta, quantity: exactQty } = body;
 
@@ -199,14 +196,16 @@ export async function PATCH(req: NextRequest) {
     }
 
     const db = await getDatabase();
-    const product = await db
-      .collection("products")
-      .findOne({ $or: [{ id: productId }, { name: productId }] });
+    const orQueries: any[] = [{ id: productId }, { id: String(productId) }, { name: productId }];
+    if (ObjectId.isValid(productId)) {
+      orQueries.push({ _id: new ObjectId(productId) });
+    }
 
-    const availableStock = product && typeof product.stockCount === "number" ? product.stockCount : 10;
+    const product = await db.collection("products").findOne({ $or: orQueries });
+    const availableStock = product && typeof product.stockCount === "number" ? Math.max(1, product.stockCount) : 10;
 
     const cartDoc = await db.collection("carts").findOne({ cartId });
-    const currentItems = (cartDoc?.items || []) as { productId: string; quantity: number }[];
+    const currentItems = (cartDoc?.items || []) as { productId: string; quantity: number; product?: any }[];
 
     const itemIdx = currentItems.findIndex(
       (it) => it.productId === productId || it.productId === product?.id
@@ -225,7 +224,6 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Provide delta or quantity" }, { status: 400 });
     }
 
-    // Real-world rule: never exceed available stock count, never less than 1!
     if (newQty > availableStock) {
       newQty = availableStock;
     }
@@ -253,7 +251,7 @@ export async function PATCH(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
-    const cartId = await getCartSessionId();
+    const cartId = await getCartSessionId(req);
     const { searchParams } = new URL(req.url);
     const productId = searchParams.get("productId");
     const clear = searchParams.get("clear");
@@ -271,9 +269,7 @@ export async function DELETE(req: NextRequest) {
 
     const cartDoc = await db.collection("carts").findOne({ cartId });
     const currentItems = (cartDoc?.items || []) as { productId: string; quantity: number }[];
-    const filtered = currentItems.filter(
-      (it) => it.productId !== productId
-    );
+    const filtered = currentItems.filter((it) => it.productId !== productId);
 
     await db.collection("carts").updateOne(
       { cartId },

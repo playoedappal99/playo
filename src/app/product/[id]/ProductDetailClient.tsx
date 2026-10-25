@@ -292,6 +292,11 @@ export default function ProductDetailClient({
       color: selectedColor || product.color,
       imageUrl: activeImageUrl || product.imageUrl,
     };
+    try {
+      const payload = JSON.stringify({ product: variantProduct, quantity });
+      sessionStorage.setItem("playo_direct_checkout", payload);
+      localStorage.setItem("playo_direct_checkout", payload);
+    } catch {}
     addToCart(variantProduct, false, quantity);
     router.push("/checkout");
   };

@@ -6,24 +6,45 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CheckoutSection from "@/components/CheckoutSection";
 import { useCart } from "@/data/cart-store";
+import { ProductItem } from "@/data/store-data";
 import { ArrowLeft, ShieldCheck } from "lucide-react";
 
 export default function CheckoutPage() {
   const { cartItems, wishlistIds, setIsCartOpen } = useCart();
   const [isMounted, setIsMounted] = useState(false);
+  const [directProduct, setDirectProduct] = useState<ProductItem | null>(null);
 
   useEffect(() => {
     setIsMounted(true);
+    try {
+      const stored =
+        sessionStorage.getItem("playo_direct_checkout") ||
+        localStorage.getItem("playo_direct_checkout");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed?.product) {
+          setDirectProduct({
+            ...parsed.product,
+            quantity: parsed.quantity || 1,
+          });
+        }
+      }
+    } catch (e) {
+      console.warn("Direct checkout parse error:", e);
+    }
   }, []);
-
-  // By passing null, CheckoutSection checks out all active items in the database-backed cart
-  const checkoutProduct = null;
 
   return (
     <div className="min-h-screen bg-gray-50/50 text-gray-900 flex flex-col font-sans">
       <Navbar
         activePage="checkout"
-        cartCount={isMounted ? cartItems.reduce((acc, i) => acc + i.quantity, 0) : 0}
+        cartCount={
+          isMounted
+            ? directProduct
+              ? (directProduct as any).quantity || 1
+              : cartItems.reduce((acc, i) => acc + i.quantity, 0)
+            : 0
+        }
         wishlistCount={isMounted ? wishlistIds.length : 0}
         onOpenCart={() => setIsCartOpen(true)}
       />
@@ -47,10 +68,7 @@ export default function CheckoutPage() {
 
         {/* The Exact Checkout Section */}
         <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-gray-100 overflow-hidden">
-          <CheckoutSection
-            product={checkoutProduct}
-            isModal={false}
-          />
+          <CheckoutSection product={directProduct} isModal={false} />
         </div>
       </main>
 

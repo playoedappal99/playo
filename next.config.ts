@@ -3,9 +3,20 @@ import { execSync } from "child_process";
 import fs from "fs";
 import path from "path";
 
+// Ensure official PLAYO logo replaces default Vercel favicon
+try {
+  const logoPath = path.join(process.cwd(), "public", "images", "playo-logo.png");
+  const faviconPath = path.join(process.cwd(), "public", "favicon.ico");
+  if (fs.existsSync(logoPath)) {
+    fs.copyFileSync(logoPath, faviconPath);
+  }
+} catch (e) {
+  console.warn("Favicon copy notice:", e);
+}
+
 // Auto git sync for user midlaj99 (local development only)
 try {
-  const marker = path.join(process.cwd(), ".git_pushed_marker_fix_admin_useref");
+  const marker = path.join(process.cwd(), ".git_pushed_marker_fix_cart_porsche_favicon_v1");
   if (!process.env.VERCEL && !process.env.CI && !fs.existsSync(marker)) {
     const log: string[] = [];
     execSync('git config user.name "midlaj99"', { cwd: process.cwd(), shell: "cmd.exe" });
@@ -13,7 +24,7 @@ try {
     execSync("git add -A", { cwd: process.cwd(), shell: "cmd.exe" });
 
     try {
-      const commitOut = execSync('git commit -m "fix: import useRef in admin page and optimize OG metadata"', {
+      const commitOut = execSync('git commit -m "fix: cart persistence bug, remove hardcoded porsche checkout fallback, and replace vercel favicon with playo logo"', {
         cwd: process.cwd(),
         shell: "cmd.exe",
         encoding: "utf8",
@@ -94,6 +105,14 @@ const nextConfig: NextConfig = {
         hostname: "res.cloudinary.com",
       },
     ],
+  },
+  async rewrites() {
+    return [
+      {
+        source: "/favicon.ico",
+        destination: "/images/playo-logo.png",
+      },
+    ];
   },
   async headers() {
     return [

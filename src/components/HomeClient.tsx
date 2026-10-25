@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import HeroSection from "@/components/HeroSection";
 import CategorySection from "@/components/CategorySection";
@@ -22,6 +23,7 @@ export default function HomeClient({
   initialProducts,
   initialCategories,
 }: HomeClientProps) {
+  const router = useRouter();
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [products, setProducts] = useState<ProductItem[]>(initialProducts);
@@ -138,7 +140,13 @@ export default function HomeClient({
           onSelectCategory={setActiveCategory}
           onAddToCart={addToCart}
           onBuyNow={(prod) => {
+            try {
+              const directPayload = JSON.stringify({ product: prod, quantity: 1 });
+              sessionStorage.setItem("playo_direct_checkout", directPayload);
+              localStorage.setItem("playo_direct_checkout", directPayload);
+            } catch {}
             addToCart(prod);
+            router.push("/checkout");
           }}
           onToggleWishlist={toggleWishlist}
           wishlistIds={wishlistIds}

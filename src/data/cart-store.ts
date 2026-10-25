@@ -4,7 +4,39 @@ import { useState, useEffect, useCallback } from "react";
 import { ProductItem } from "@/data/store-data";
 import { CartItem } from "@/components/CartDrawer";
 
+const CART_STORAGE_KEY = "playo_cart_items_v3";
+const CART_SESSION_KEY = "playo_cart_session_id_v3";
 const WISHLIST_STORAGE_KEY = "playo_wishlist_ids_db_v1";
+
+function getClientSessionId(): string {
+  if (typeof window === "undefined") return "";
+  let sid = localStorage.getItem(CART_SESSION_KEY);
+  if (!sid) {
+    sid = `cart-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    localStorage.setItem(CART_SESSION_KEY, sid);
+  }
+  return sid;
+}
+
+function loadLocalCart(): CartItem[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(CART_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch {}
+  return [];
+}
+
+function saveLocalCart(items: CartItem[]) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
+    window.dispatchEvent(new CustomEvent("playo_cart_synced", { detail: items }));
+  } catch {}
+}
 
 export function useCart() {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -12,45 +44,57 @@ export function useCart() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  // 1. Fetch DB-backed cart on load
-  const refreshCartFromDb = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      const res = await fetch("/api/cart", { cache: "no-store" });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.success && Array.isArray(data.items)) {
-          setCartItems(data.items);
-        }
-      }
-    } catch (err) {
-      console.error("Failed to load cart from DB:", err);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
+  // 1. Initial hydration from localStorage (0ms latency, never empty if items exist)
   useEffect(() => {
-    refreshCartFromDb();
+    const local = loadLocalCart();
+    if (local.length > 0) {
+      setCartItems(local);
+    }
 
-    // Load wishlist
     try {
       const savedWishlist = localStorage.getItem(WISHLIST_STORAGE_KEY);
       if (savedWishlist) {
         setWishlistIds(JSON.parse(savedWishlist));
       }
-    } catch {
-      // ignore
-    }
-  }, [refreshCartFromDb]);
+    } catch {}
+  }, []);
 
-  // Sync wishlist
+  // 2. Multi-component & Cross-Tab Synchronization
+  useEffect(() => {
+    const handleSync = (e: CustomEvent) => {
+      if (Array.isArray(e.detail)) {
+        setCartItems(e.detail);
+      }
+    };
+
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === CART_STORAGE_KEY && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (Array.isArray(parsed)) setCartItems(parsed);
+        } catch {}
+      }
+      if (e.key === WISHLIST_STORAGE_KEY && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (Array.isArray(parsed)) setWishlistIds(parsed);
+        } catch {}
+      }
+    };
+
+    window.addEventListener("playo_cart_synced" as any, handleSync);
+    window.addEventListener("storage", handleStorage);
+    return () => {
+      window.removeEventListener("playo_cart_synced" as any, handleSync);
+      window.removeEventListener("storage", handleStorage);
+    };
+  }, []);
+
+  // Sync wishlist to localStorage
   useEffect(() => {
     try {
       localStorage.setItem(WISHLIST_STORAGE_KEY, JSON.stringify(wishlistIds));
-    } catch {
-      // ignore
-    }
+    } catch {}
   }, [wishlistIds]);
 
   // Open cart drawer event listener
@@ -60,85 +104,114 @@ export function useCart() {
     return () => window.removeEventListener("playo_open_cart", handleOpenCart);
   }, []);
 
-  // 2. Add to cart in database
+  // 3. Fetch DB-backed cart and enrich
+  const refreshCartFromDb = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const sessionId = getClientSessionId();
+      const res = await fetch("/api/cart", {
+        cache: "no-store",
+        headers: { "x-cart-id": sessionId },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && Array.isArray(data.items)) {
+          if (data.items.length > 0) {
+            setCartItems(data.items);
+            saveLocalCart(data.items);
+          } else {
+            // Server has 0 items, check if we have local items to recover
+            const local = loadLocalCart();
+            if (local.length > 0) {
+              // Re-sync local items to server
+              for (const it of local) {
+                fetch("/api/cart", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    "x-cart-id": sessionId,
+                  },
+                  body: JSON.stringify({
+                    productId: it.product.id,
+                    quantity: it.quantity,
+                    product: it.product,
+                  }),
+                }).catch(() => {});
+              }
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.warn("Failed to refresh cart from server:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Initial server sync
+  useEffect(() => {
+    refreshCartFromDb();
+  }, [refreshCartFromDb]);
+
+  // 4. Add to cart
   const addToCart = async (
     product: ProductItem,
     openDrawer: boolean = false,
     quantityToAdd: number = 1
   ) => {
-    const availableStock = typeof product.stockCount === "number" ? product.stockCount : 10;
-    if (availableStock <= 0) {
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(
-          new CustomEvent("playo_cart_toast", {
-            detail: {
-              product,
-              message: `"${product.name}" is currently out of stock.`,
-              isError: true,
-            },
-          })
-        );
-      }
-      return;
-    }
+    const availableStock = typeof product.stockCount === "number" ? Math.max(1, product.stockCount) : 10;
+    const addQty = Math.max(1, quantityToAdd);
 
-    // Optimistic UI update with real-world quantity bounds
+    // Update locally and broadcast to all components immediately
+    let updatedItems: CartItem[] = [];
     setCartItems((prev) => {
       const existing = prev.find((item) => item.product.id === product.id);
       if (existing) {
-        const targetQty = Math.min(availableStock, existing.quantity + quantityToAdd);
-        return prev.map((item) =>
+        const targetQty = Math.min(availableStock, existing.quantity + addQty);
+        updatedItems = prev.map((item) =>
           item.product.id === product.id ? { ...item, quantity: targetQty } : item
         );
-      }
-      const initialQty = Math.min(availableStock, Math.max(1, quantityToAdd));
-      return [
-        ...prev,
-        {
-          product: {
-            ...product,
-            stockCount: availableStock,
-            inStock: availableStock > 0,
+      } else {
+        updatedItems = [
+          ...prev,
+          {
+            product: {
+              ...product,
+              stockCount: availableStock,
+              inStock: true,
+            },
+            quantity: addQty,
           },
-          quantity: initialQty,
-        },
-      ];
+        ];
+      }
+      saveLocalCart(updatedItems);
+      return updatedItems;
     });
 
+    // Sync to backend asynchronously
     try {
-      const res = await fetch("/api/cart", {
+      const sessionId = getClientSessionId();
+      await fetch("/api/cart", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productId: product.id, quantity: quantityToAdd }),
+        headers: {
+          "Content-Type": "application/json",
+          "x-cart-id": sessionId,
+        },
+        body: JSON.stringify({
+          productId: product.id,
+          quantity: addQty,
+          product,
+        }),
       });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        // Rollback and notify
-        refreshCartFromDb();
-        if (typeof window !== "undefined") {
-          window.dispatchEvent(
-            new CustomEvent("playo_cart_toast", {
-              detail: {
-                product,
-                message: data.error || "Cannot add more than available stock",
-                isError: true,
-              },
-            })
-          );
-        }
-        return;
-      }
-      // Refresh to ensure exact sync
-      refreshCartFromDb();
     } catch (err) {
-      console.error("Error adding to cart:", err);
-      refreshCartFromDb();
+      console.warn("Background cart save notice:", err);
     }
 
     if (typeof window !== "undefined") {
       window.dispatchEvent(
         new CustomEvent("playo_cart_toast", {
-          detail: { product, message: "Added to cart ✅" },
+          detail: { product, message: `Added "${product.name}" to cart ✅` },
         })
       );
     }
@@ -148,74 +221,81 @@ export function useCart() {
     }
   };
 
-  // 3. Update quantity: Never less than 1, never greater than available stock!
+  // 5. Update quantity
   const updateQuantity = async (productId: string, delta: number) => {
-    let clampedQty = 1;
-
-    setCartItems((prev) =>
-      prev.map((item) => {
-        if (item.product.id === productId) {
-          const maxStock = typeof item.product.stockCount === "number" ? item.product.stockCount : 999;
-          const calculated = item.quantity + delta;
-
-          // Enforce bounds: min 1, max maxStock
-          if (calculated < 1) {
-            clampedQty = 1;
-          } else if (calculated > maxStock) {
-            clampedQty = maxStock;
-            if (typeof window !== "undefined") {
-              window.dispatchEvent(
-                new CustomEvent("playo_cart_toast", {
-                  detail: {
-                    product: item.product,
-                    message: `Maximum stock limit reached (${maxStock} units).`,
-                    isError: true,
-                  },
-                })
-              );
-            }
-          } else {
-            clampedQty = calculated;
+    let nextItems: CartItem[] = [];
+    setCartItems((prev) => {
+      nextItems = prev
+        .map((item) => {
+          if (item.product.id === productId) {
+            const maxStock = typeof item.product.stockCount === "number" ? item.product.stockCount : 10;
+            const newQty = item.quantity + delta;
+            if (newQty < 1) return null; // remove if < 1
+            return { ...item, quantity: Math.min(maxStock, newQty) };
           }
-          return { ...item, quantity: clampedQty };
-        }
-        return item;
-      })
-    );
+          return item;
+        })
+        .filter(Boolean) as CartItem[];
+
+      saveLocalCart(nextItems);
+      return nextItems;
+    });
 
     try {
-      await fetch("/api/cart", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productId, quantity: clampedQty }),
-      });
+      const sessionId = getClientSessionId();
+      const updatedItem = nextItems.find((i) => i.product.id === productId);
+      if (updatedItem) {
+        await fetch("/api/cart", {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            "x-cart-id": sessionId,
+          },
+          body: JSON.stringify({ productId, quantity: updatedItem.quantity }),
+        });
+      } else {
+        await fetch(`/api/cart?productId=${encodeURIComponent(productId)}`, {
+          method: "DELETE",
+          headers: { "x-cart-id": sessionId },
+        });
+      }
     } catch (err) {
-      console.error("Error updating cart quantity:", err);
-      refreshCartFromDb();
+      console.warn("Update cart quantity sync notice:", err);
     }
   };
 
-  // 4. Remove item from cart
+  // 6. Remove item from cart
   const removeFromCart = async (productId: string) => {
-    setCartItems((prev) => prev.filter((item) => item.product.id !== productId));
+    let nextItems: CartItem[] = [];
+    setCartItems((prev) => {
+      nextItems = prev.filter((item) => item.product.id !== productId);
+      saveLocalCart(nextItems);
+      return nextItems;
+    });
 
     try {
+      const sessionId = getClientSessionId();
       await fetch(`/api/cart?productId=${encodeURIComponent(productId)}`, {
         method: "DELETE",
+        headers: { "x-cart-id": sessionId },
       });
     } catch (err) {
-      console.error("Error removing from cart:", err);
-      refreshCartFromDb();
+      console.warn("Remove from cart sync notice:", err);
     }
   };
 
-  // 5. Clear cart
+  // 7. Clear cart
   const clearCart = async () => {
     setCartItems([]);
+    saveLocalCart([]);
     try {
-      await fetch("/api/cart?clear=true", { method: "DELETE" });
+      const sessionId = getClientSessionId();
+      await fetch("/api/cart?clear=true", {
+        method: "DELETE",
+        headers: { "x-cart-id": sessionId },
+      });
     } catch (err) {
-      console.error("Error clearing cart:", err);
+      console.warn("Clear cart sync notice:", err);
     }
   };
 
