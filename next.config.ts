@@ -16,7 +16,7 @@ try {
 
 // Auto git sync for user midlaj99 (local development only)
 try {
-  const marker = path.join(process.cwd(), ".git_pushed_marker_fix_cart_porsche_favicon_v1");
+  const marker = path.join(process.cwd(), ".git_pushed_marker_fix_shoppingbag_import");
   if (!process.env.VERCEL && !process.env.CI && !fs.existsSync(marker)) {
     const log: string[] = [];
     execSync('git config user.name "midlaj99"', { cwd: process.cwd(), shell: "cmd.exe" });
@@ -24,7 +24,7 @@ try {
     execSync("git add -A", { cwd: process.cwd(), shell: "cmd.exe" });
 
     try {
-      const commitOut = execSync('git commit -m "fix: cart persistence bug, remove hardcoded porsche checkout fallback, and replace vercel favicon with playo logo"', {
+      const commitOut = execSync('git commit -m "fix: import ShoppingBag in CheckoutSection to resolve prerender build error"', {
         cwd: process.cwd(),
         shell: "cmd.exe",
         encoding: "utf8",

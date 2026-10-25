@@ -12,6 +12,7 @@ import {
   ArrowRight,
   Sparkles,
   Tag,
+  ShoppingBag,
 } from "lucide-react";
 import { ProductItem } from "@/data/store-data";
 import { useCart } from "@/data/cart-store";
