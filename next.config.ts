@@ -16,7 +16,7 @@ try {
 
 // Auto git sync for user midlaj99 (local development only)
 try {
-  const marker = path.join(process.cwd(), ".git_pushed_marker_fix_admin_page_jsx_syntax_v1");
+  const marker = path.join(process.cwd(), ".git_pushed_marker_fix_admin_page_jsx_syntax_v2");
   if (!process.env.VERCEL && !process.env.CI && !fs.existsSync(marker)) {
     const log: string[] = [];
     execSync('git config user.name "midlaj99"', { cwd: process.cwd(), shell: "cmd.exe" });

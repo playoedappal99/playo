@@ -552,7 +552,7 @@ function AdminContent() {
   const handleOpenAddCategory = () => {
     setFormCategory({ name: "", imageUrl: "" });
     setCategoryImageFile(null);
-    setOriginalCategoryFile(null);
+                        setOriginalCategoryFile(null);
     setBgRemovedSuccess(false);
     setIsRemovingBg(false);
     setIsAddCategoryOpen(true);
@@ -2922,7 +2922,7 @@ function AdminContent() {
                         onClick={() => {
                           setFormCategory((prev) => ({ ...prev, imageUrl: "" }));
                           setCategoryImageFile(null);
-                          setOriginalCategoryFile(null);
+                                              setOriginalCategoryFile(null);
                           setBgRemovedSuccess(false);
                           setIsRemovingBg(false);
                         }}
@@ -2942,6 +2942,8 @@ function AdminContent() {
                   <div className="hidden">
 
 
+
+
                     <img
                       src={formCategory.imageUrl}
                       alt="Category Preview"
@@ -2952,7 +2954,7 @@ function AdminContent() {
                       onClick={() => {
                         setFormCategory((prev) => ({ ...prev, imageUrl: "" }));
                         setCategoryImageFile(null);
-    setOriginalCategoryFile(null);
+                        setOriginalCategoryFile(null);
     setBgRemovedSuccess(false);
     setIsRemovingBg(false);
                       }}
