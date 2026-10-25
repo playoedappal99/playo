@@ -1809,6 +1809,8 @@ function AdminContent() {
               </div>
             </div>
 
+          </div>
+
             {/* Orders Table */}
             <div className="bg-white rounded-2xl border border-sky-100/70 shadow-2xs overflow-hidden">
               <div className="overflow-x-auto">

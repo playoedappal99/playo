@@ -16,7 +16,7 @@ try {
 
 // Auto git sync for user midlaj99 (local development only)
 try {
-  const marker = path.join(process.cwd(), ".git_pushed_marker_fix_stock_decrement_and_footer_v1");
+  const marker = path.join(process.cwd(), ".git_pushed_marker_fix_admin_page_jsx_syntax_v1");
   if (!process.env.VERCEL && !process.env.CI && !fs.existsSync(marker)) {
     const log: string[] = [];
     execSync('git config user.name "midlaj99"', { cwd: process.cwd(), shell: "cmd.exe" });
@@ -24,7 +24,7 @@ try {
     execSync("git add -A", { cwd: process.cwd(), shell: "cmd.exe" });
 
     try {
-      const commitOut = execSync('git commit -m "fix: ensure product stock decrements on order placement and remove admin dashboard link from footer"', {
+      const commitOut = execSync('git commit -m "fix: resolve JSX syntax error in admin page and ensure clean production build"', {
         cwd: process.cwd(),
         shell: "cmd.exe",
         encoding: "utf8",
