@@ -157,9 +157,10 @@ export async function GET(req: NextRequest) {
         images: allImgs,
         galleryImages: gallery,
         imageUrl: allImgs[0] || p.imageUrl || "/images/catalog/porsche-drift-rc.jpg",
-        stockCount: typeof p.stockCount === "number" ? p.stockCount : 0,
+        stockCount: typeof p.stockCount === "number" ? p.stockCount : (parseInt(String(p.stockCount ?? "0"), 10) || 0),
+        soldCount: typeof p.soldCount === "number" ? p.soldCount : (parseInt(String(p.soldCount ?? "0"), 10) || 0),
         deliveryFee: typeof p.deliveryFee === "number" ? p.deliveryFee : 0,
-        inStock: (typeof p.stockCount === "number" ? p.stockCount : 0) > 0,
+        inStock: (typeof p.stockCount === "number" ? p.stockCount : (parseInt(String(p.stockCount ?? "0"), 10) || 0)) > 0 && p.inStock !== false,
       };
     });
 

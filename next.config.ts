@@ -16,7 +16,7 @@ try {
 
 // Auto git sync for user midlaj99 (local development only)
 try {
-  const marker = path.join(process.cwd(), ".git_pushed_marker_fix_shoppingbag_import");
+  const marker = path.join(process.cwd(), ".git_pushed_marker_fix_stock_decrement_and_footer_v1");
   if (!process.env.VERCEL && !process.env.CI && !fs.existsSync(marker)) {
     const log: string[] = [];
     execSync('git config user.name "midlaj99"', { cwd: process.cwd(), shell: "cmd.exe" });
@@ -24,7 +24,7 @@ try {
     execSync("git add -A", { cwd: process.cwd(), shell: "cmd.exe" });
 
     try {
-      const commitOut = execSync('git commit -m "fix: import ShoppingBag in CheckoutSection to resolve prerender build error"', {
+      const commitOut = execSync('git commit -m "fix: ensure product stock decrements on order placement and remove admin dashboard link from footer"', {
         cwd: process.cwd(),
         shell: "cmd.exe",
         encoding: "utf8",

@@ -46,7 +46,7 @@ export default function HomeClient({
     async function refreshStoreData() {
       try {
         const [prodRes, catRes] = await Promise.all([
-          fetch("/api/products"),
+          fetch(`/api/products?nocache=true&t=${Date.now()}`, { cache: "no-store" }),
           fetch("/api/categories"),
         ]);
 

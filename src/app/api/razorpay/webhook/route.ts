@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDatabase } from "@/lib/mongodb";
-import { sendEmail, generateOrderEmailHtml } from "@/lib/email";
+import { createOrGetOrder } from "@/lib/order-service";
 import crypto from "crypto";
 
 export const dynamic = "force-dynamic";
@@ -42,15 +41,18 @@ export async function POST(req: NextRequest) {
     const event = payload.event;
     console.log(`Razorpay Webhook received event: "${event}"`);
 
-    const db = await getDatabase();
-
-    // 2. Handle Payment Success / Order Paid
+    // Only process payment captured or order paid events
     if (event === "order.paid" || event === "payment.captured") {
       const paymentEntity = payload.payload?.payment?.entity;
       const orderEntity = payload.payload?.order?.entity;
 
-      const razorpayPaymentId = paymentEntity?.id || "";
-      const razorpayOrderId = paymentEntity?.order_id || orderEntity?.id || "";
+      const razorpayPaymentId = paymentEntity?.id;
+      const razorpayOrderId = paymentEntity?.order_id || orderEntity?.id;
+
+      if (!razorpayPaymentId) {
+        return NextResponse.json({ status: "ok", message: "Ignored event without payment ID" });
+      }
+
       const amountInPaise = Number(paymentEntity?.amount || orderEntity?.amount_paid || 0);
       const totalRupees = Math.round(amountInPaise / 100);
 
@@ -59,32 +61,7 @@ export async function POST(req: NextRequest) {
         ...(paymentEntity?.notes || {}),
       };
 
-      // Check if order was already recorded by client-side verification
-      const existingOrder = await db.collection("orders").findOne({
-        $or: [
-          { razorpayPaymentId: razorpayPaymentId },
-          { razorpayOrderId: razorpayOrderId },
-        ],
-      });
-
-      if (existingOrder) {
-        // Ensure status is marked Paid
-        if (existingOrder.paymentStatus !== "Paid") {
-          await db.collection("orders").updateOne(
-            { _id: existingOrder._id },
-            { $set: { paymentStatus: "Paid", status: "Pending", updatedAt: new Date() } }
-          );
-        }
-        return NextResponse.json({
-          status: "ok",
-          message: "Order was already recorded and confirmed.",
-          orderId: existingOrder.id,
-        });
-      }
-
-      // Customer closed browser/app before client redirect completed!
-      // AUTO-RECOVER ORDER FROM RAZORPAY WEBHOOK DATA:
-      const cleanName = notes.customerName || paymentEntity?.email || "Customer";
+      const cleanName = notes.customerName || paymentEntity?.email || "Valued Customer";
       const cleanPhone = notes.phone || paymentEntity?.contact || "9999999999";
       const cleanEmail = notes.email || paymentEntity?.email || "customer@playoedappal.in";
       const cleanAddress = notes.deliveryAddress || "Showroom Pickup / Standard Delivery";
@@ -93,82 +70,39 @@ export async function POST(req: NextRequest) {
       const deliveryFee = Number(notes.deliveryFee || 0);
       const discount = Number(notes.discount || 0);
 
-      const newOrderId = `ORD-${Date.now().toString().slice(-6)}`;
-
-      const recoveredOrder = {
-        id: newOrderId,
-        orderDate: new Date().toLocaleDateString("en-IN", {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-        }),
-        createdAt: new Date(),
+      // Concurrency-safe atomic order creation or retrieval
+      const { order, isNew } = await createOrGetOrder({
+        razorpayOrderId,
+        razorpayPaymentId,
+        razorpaySignature: signature,
         customerName: cleanName,
         phone: cleanPhone,
         email: cleanEmail,
         deliveryAddress: cleanAddress,
         shippingOption,
-        deliveryInstructions: "Order automatically captured & confirmed via Live Razorpay Webhook",
-        status: "Pending",
-        estimatedDelivery: "2-3 Business Days",
-        courier: shippingOption.includes("Speed") ? "Speed & Safe Courier Service" : "India Post Doorstep Express",
-        trackingNumber: `IP${Date.now().toString().slice(-8)}IN`,
-        carrierLocation: "Payment captured via Razorpay Live - awaiting showroom dispatch",
-        paymentMethod: "Razorpay (Live Standard Checkout)",
-        paymentStatus: "Paid",
-        razorpayOrderId,
-        razorpayPaymentId,
-        razorpaySignature: signature,
-        autoRecoveredViaWebhook: true,
+        deliveryInstructions: "Auto-confirmed via Razorpay Webhook",
+        total: totalRupees,
+        deliveryFee,
+        discount,
+        source: "webhook",
         items: [
           {
-            id: `item-${Date.now()}`,
+            id: `item-${razorpayPaymentId}`,
             name: itemsSummary,
+            category: "General",
+            imageUrl: "/images/catalog/porsche-drift-rc.jpg",
             price: totalRupees,
             quantity: 1,
             specs: "Live Verified Order",
           },
         ],
-        subtotal: totalRupees,
-        discount,
-        deliveryFee,
-        total: totalRupees,
-      };
-
-      await db.collection("orders").insertOne(recoveredOrder);
-
-      // Create Admin Dashboard notification
-      await db.collection("notifications").insertOne({
-        id: `notif-webhook-${newOrderId}`,
-        type: "order",
-        title: "Live Razorpay Order Confirmed (Webhook)",
-        desc: `Order #${newOrderId} for ₹${totalRupees.toLocaleString("en-IN")} received from ${cleanName} (Payment ID: ${razorpayPaymentId}).`,
-        time: "Just now",
-        read: false,
-        createdAt: new Date(),
       });
 
-      // Dispatch Email Notification to Store Admin
-      try {
-        const adminEmail = process.env.ADMIN_EMAIL || "playoedappal99@gmail.com";
-        const emailHtml = generateOrderEmailHtml(recoveredOrder);
-        sendEmail({
-          to: adminEmail,
-          subject: `🛒 New Order #${newOrderId} Received via Webhook - ₹${totalRupees.toLocaleString("en-IN")} from ${cleanName}`,
-          html: emailHtml,
-          text: `Playo Edappal: New Order #${newOrderId} auto-recovered via Webhook for ₹${totalRupees} from ${cleanName}.`,
-        }).catch((err) => {
-          console.warn("Webhook order email send failed:", err);
-        });
-      } catch (emailErr) {
-        console.warn("Could not send webhook order email:", emailErr);
-      }
-
-      console.log(`Successfully auto-recovered and created order #${newOrderId} via Webhook.`);
+      console.log(`Webhook handled order #${order.id} (isNew: ${isNew})`);
       return NextResponse.json({
         status: "ok",
-        message: "Order created and confirmed via webhook",
-        orderId: newOrderId,
+        orderId: order.id,
+        isNew,
       });
     }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
@@ -208,9 +208,32 @@ export default function CheckoutSection({
   const [orderSuccess, setOrderSuccess] = useState(false);
   const [placedOrderId, setPlacedOrderId] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+  const isSubmittingRef = useRef(false);
 
   useEffect(() => {
     loadRazorpayScript();
+
+    // Auto-prefill customer fields from previous order if available
+    try {
+      if (typeof window !== "undefined") {
+        const savedPhone = localStorage.getItem("playo_customer_phone");
+        if (savedPhone) setMobileNumber(savedPhone);
+        const savedName = localStorage.getItem("playo_customer_name");
+        if (savedName) setFullName(savedName);
+        const savedEmail = localStorage.getItem("playo_customer_email");
+        if (savedEmail) setEmailAddress(savedEmail);
+        const savedHouse = localStorage.getItem("playo_customer_house");
+        if (savedHouse) setHouseNo(savedHouse);
+        const savedRoad = localStorage.getItem("playo_customer_road");
+        if (savedRoad) setRoadName(savedRoad);
+        const savedCity = localStorage.getItem("playo_customer_city");
+        if (savedCity) setCity(savedCity);
+        const savedState = localStorage.getItem("playo_customer_state");
+        if (savedState) setState(savedState);
+        const savedPin = localStorage.getItem("playo_customer_pin");
+        if (savedPin) setPinCode(savedPin);
+      }
+    } catch {}
   }, []);
 
   const subtotal = useMemo(() => {
@@ -235,6 +258,7 @@ export default function CheckoutSection({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmittingRef.current || isProcessing) return;
     setErrorMsg("");
 
     // Validations
@@ -271,7 +295,22 @@ export default function CheckoutSection({
       return;
     }
 
+    isSubmittingRef.current = true;
     setIsProcessing(true);
+
+    // Save customer details immediately so /my-orders recognizes this user even if browser refreshes
+    try {
+      const clean10 = mobileNumber.replace(/\D/g, "").slice(-10);
+      localStorage.setItem("playo_customer_name", fullName.trim());
+      localStorage.setItem("playo_customer_phone", clean10);
+      localStorage.setItem("playo_customer_email", emailAddress.trim());
+      localStorage.setItem("playo_customer_house", houseNo.trim());
+      localStorage.setItem("playo_customer_road", roadName.trim());
+      localStorage.setItem("playo_customer_city", city.trim());
+      localStorage.setItem("playo_customer_state", state.trim());
+      localStorage.setItem("playo_customer_pin", pinCode.trim());
+      document.cookie = `playo_customer_phone=${clean10}; path=/; max-age=7776000; SameSite=Lax;`;
+    } catch {}
 
     try {
       const fullAddress = `${houseNo.trim()}, ${roadName.trim()}${
@@ -282,6 +321,7 @@ export default function CheckoutSection({
       const isLoaded = await loadRazorpayScript();
       if (!isLoaded || !(window as any).Razorpay) {
         setErrorMsg("Could not load Razorpay payment gateway. Please check your internet connection.");
+        isSubmittingRef.current = false;
         setIsProcessing(false);
         return;
       }
@@ -312,6 +352,7 @@ export default function CheckoutSection({
 
       if (!res.ok || !data.success) {
         setErrorMsg(data.error || "Failed to initialize payment. Please try again.");
+        isSubmittingRef.current = false;
         setIsProcessing(false);
         return;
       }
@@ -339,6 +380,7 @@ export default function CheckoutSection({
         },
         modal: {
           ondismiss: function () {
+            isSubmittingRef.current = false;
             setIsProcessing(false);
             setErrorMsg(
               "Payment window was closed or cancelled. Your order was NOT placed."
@@ -379,6 +421,7 @@ export default function CheckoutSection({
                 verifyData.error ||
                   "Payment verification failed. Please contact Playo Edappal support."
               );
+              isSubmittingRef.current = false;
               setIsProcessing(false);
               return;
             }
@@ -397,10 +440,12 @@ export default function CheckoutSection({
                   JSON.stringify(list)
                 );
               }
+              document.cookie = `playo_placed_order_ids=${list.join(",")}; path=/; max-age=7776000; SameSite=Lax;`;
             } catch (e) {
               console.warn("Could not save order ID to device storage:", e);
             }
 
+            isSubmittingRef.current = false;
             setIsProcessing(false);
             setOrderSuccess(true);
             try {
@@ -414,6 +459,7 @@ export default function CheckoutSection({
               verifyErr.message ||
                 "Failed to verify payment with server. If money was deducted, contact support."
             );
+            isSubmittingRef.current = false;
             setIsProcessing(false);
           }
         },
@@ -422,6 +468,7 @@ export default function CheckoutSection({
       const rzpInstance = new (window as any).Razorpay(options);
       rzpInstance.on("payment.failed", function (failResponse: any) {
         console.error("Razorpay payment failed:", failResponse);
+        isSubmittingRef.current = false;
         setIsProcessing(false);
         setErrorMsg(
           failResponse.error?.description ||
@@ -430,10 +477,10 @@ export default function CheckoutSection({
       });
 
       rzpInstance.open();
-      setIsProcessing(false);
     } catch (err: any) {
       console.error("Order submit error:", err);
       setErrorMsg(err.message || "Network error. Please try again.");
+      isSubmittingRef.current = false;
       setIsProcessing(false);
     }
   };

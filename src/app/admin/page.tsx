@@ -179,9 +179,42 @@ function AdminContent() {
 
   // Orders State (from MongoDB)
   const [orders, setOrders] = useState<AdminOrder[]>([]);
+  const [isSyncingRazorpay, setIsSyncingRazorpay] = useState(false);
   const [orderSearch, setOrderSearch] = useState("");
   const [orderFilter, setOrderFilter] = useState<"ALL" | OrderStatus>("ALL");
   const [isOrdersLoading, setIsOrdersLoading] = useState(false);
+
+  // In-memory deduplication: guarantee no order is ever rendered twice
+  const deduplicatedOrders = useMemo(() => {
+    const seen = new Set<string>();
+    const result: AdminOrder[] = [];
+    for (const ord of orders) {
+      const key = (ord as any).razorpayPaymentId || ord.id;
+      if (!seen.has(key)) {
+        seen.add(key);
+        result.push(ord);
+      }
+    }
+    return result;
+  }, [orders]);
+
+  const handleSyncRazorpay = async () => {
+    setIsSyncingRazorpay(true);
+    try {
+      const res = await fetch("/api/orders?sync=true", {
+        cache: "no-store",
+        headers: adminHeaders(),
+      });
+      const data = await res.json();
+      if (data.success && Array.isArray(data.orders)) {
+        setOrders(data.orders);
+      }
+    } catch (err) {
+      console.error("Razorpay sync error:", err);
+    } finally {
+      setIsSyncingRazorpay(false);
+    }
+  };
 
   // Categories (from MongoDB)
   const [categories, setCategories] = useState<CategoryItem[]>([]);
@@ -349,7 +382,10 @@ function AdminContent() {
   const fetchOrders = useCallback(async () => {
     try {
       setIsOrdersLoading(true);
-      const res = await fetch("/api/orders", { cache: "no-store" });
+      const res = await fetch("/api/orders", {
+        cache: "no-store",
+        headers: adminHeaders(),
+      });
       const data = await res.json();
       if (data.success && Array.isArray(data.orders)) {
         setOrders(data.orders);
@@ -434,7 +470,10 @@ function AdminContent() {
     if (!isAuthenticated) return;
     try {
       // 1. Silent Check Orders
-      const ordersRes = await fetch("/api/orders", { cache: "no-store" });
+      const ordersRes = await fetch("/api/orders", {
+        cache: "no-store",
+        headers: adminHeaders(),
+      });
       const ordersData = await ordersRes.json();
       if (ordersData.success && Array.isArray(ordersData.orders)) {
         const currentOrders: AdminOrder[] = ordersData.orders;
@@ -455,6 +494,7 @@ function AdminContent() {
               `Order #${latest.id} from ${latest.customerName} - ₹${(latest.total || 0).toLocaleString("en-IN")}`,
               `order-${latest.id}`
             );
+            fetchProducts();
           }
         }
       }
@@ -1739,13 +1779,25 @@ function AdminContent() {
                   >
                     <span>{st === "ALL" ? "All Orders" : st}</span>
                     <span className="ml-1.5 text-[10px] opacity-80">
-                      {st === "ALL" ? orders.length : orders.filter((o) => o.status === st).length}
+                      {st === "ALL" ? deduplicatedOrders.length : deduplicatedOrders.filter((o) => o.status === st).length}
                     </span>
                   </button>
                 ))}
               </div>
 
-              <div className="relative w-full md:w-72">
+              <div className="flex items-center gap-2 w-full md:w-auto">
+                <button
+                  type="button"
+                  onClick={handleSyncRazorpay}
+                  disabled={isSyncingRazorpay}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 bg-sky-50 hover:bg-sky-100 text-sky-700 text-xs font-bold rounded-xl border border-sky-200 transition-all cursor-pointer whitespace-nowrap shadow-2xs"
+                  title="Check and auto-sync recent payments directly from live Razorpay"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isSyncingRazorpay ? "animate-spin text-sky-600" : ""}`} />
+                  <span>{isSyncingRazorpay ? "Syncing..." : "Sync Razorpay"}</span>
+                </button>
+
+                <div className="relative flex-1 md:w-72">
                 <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
@@ -1779,14 +1831,14 @@ function AdminContent() {
                           <p className="font-bold text-slate-700">Loading orders from database...</p>
                         </td>
                       </tr>
-                    ) : orders.length === 0 ? (
+                    ) : deduplicatedOrders.length === 0 ? (
                       <tr>
                         <td colSpan={6} className="py-10 text-center text-slate-400">
                           No orders placed in database yet.
                         </td>
                       </tr>
                     ) : (
-                      orders
+                      deduplicatedOrders
                         .filter((o) => {
                           if (orderFilter !== "ALL" && o.status !== orderFilter) return false;
                           if (orderSearch.trim()) {

@@ -168,16 +168,6 @@ export default function Footer({
                 </a>
               </li>
               <li>
-                <Link href="/admin" className="text-gray-400 hover:text-[#FF9800] transition-colors">
-                  Admin Dashboard
-                </Link>
-              </li>
-              <li>
-                <a href="https://wa.me/919072345678" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">
-                  WhatsApp Support
-                </a>
-              </li>
-              <li>
                 <span className="text-gray-400 block pt-1">Doorstep delivery across Kerala</span>
               </li>
               <li>

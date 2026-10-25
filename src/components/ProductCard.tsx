@@ -57,7 +57,11 @@ export default function ProductCard({
     onBuyNow(product);
   };
 
-  const isOutOfStock = product.inStock === false;
+  const stockNum =
+    typeof product.stockCount === "number"
+      ? product.stockCount
+      : parseInt(String(product.stockCount ?? ""), 10);
+  const isOutOfStock = product.inStock === false || (!isNaN(stockNum) && stockNum <= 0);
   const brandName = product.brand || product.specs?.brand;
   const scaleText = product.scale || product.specs?.scale;
 

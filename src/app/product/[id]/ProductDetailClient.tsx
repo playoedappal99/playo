@@ -33,7 +33,23 @@ export default function ProductDetailClient({
   initialRelatedProducts,
 }: ProductDetailClientProps) {
   const router = useRouter();
-  const product = initialProduct;
+  const [product, setProduct] = useState<ProductItem>(initialProduct);
+
+  useEffect(() => {
+    setProduct(initialProduct);
+    if (initialProduct?.id) {
+      fetch(`/api/products/${encodeURIComponent(initialProduct.id)}?t=${Date.now()}&nocache=true`, {
+        cache: "no-store",
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success && data.product) {
+            setProduct(data.product);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [initialProduct]);
   const relatedProducts = initialRelatedProducts;
 
   const [quantity, setQuantity] = useState<number>(1);
@@ -251,7 +267,12 @@ export default function ProductDetailClient({
     }
   }, [availableColors, selectedColor]);
 
-  const maxStock = product && typeof product.stockCount === "number" ? product.stockCount : 10;
+  const maxStock =
+    product && product.stockCount !== undefined && product.stockCount !== null
+      ? typeof product.stockCount === "number"
+        ? product.stockCount
+        : parseInt(String(product.stockCount), 10) || 0
+      : 10;
   const isOutOfStock = !product || maxStock <= 0 || product.inStock === false;
 
   // Real-world quantity bounds: min 1, max availableStock

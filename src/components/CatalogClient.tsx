@@ -110,7 +110,7 @@ export default function CatalogClient({
     async function loadData() {
       try {
         const [prodRes, catRes] = await Promise.all([
-          fetch("/api/products"),
+          fetch(`/api/products?nocache=true&t=${Date.now()}`, { cache: "no-store" }),
           fetch("/api/categories"),
         ]);
         const prodData = await prodRes.json();

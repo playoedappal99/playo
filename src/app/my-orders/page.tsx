@@ -18,6 +18,7 @@ import {
   ShieldCheck,
   XCircle,
   ExternalLink,
+  Search,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -116,7 +117,7 @@ function MyOrdersContent() {
 
   const [orders, setOrders] = useState<OrderDetail[]>([]);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(Boolean(urlOrderId));
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [trackInput, setTrackInput] = useState<string>("");
   const [trackError, setTrackError] = useState<string>("");
 
@@ -186,7 +187,7 @@ function MyOrdersContent() {
           }
         }
 
-        // Get placed order IDs saved in this device's localStorage
+        // 1. Get placed order IDs saved in this device's localStorage
         let deviceIds: string[] = [];
         try {
           const stored = localStorage.getItem("playo_placed_order_ids");
@@ -196,24 +197,58 @@ function MyOrdersContent() {
               deviceIds = parsed.filter((id) => typeof id === "string" && id.trim().length > 0);
             }
           }
+          if (deviceIds.length === 0 && typeof document !== "undefined") {
+            const cookieMatch = document.cookie.match(/playo_placed_order_ids=([^;]+)/);
+            if (cookieMatch && cookieMatch[1]) {
+              deviceIds = cookieMatch[1].split(",").map((s) => s.trim()).filter(Boolean);
+            }
+          }
         } catch (e) {
           console.warn("Could not read device order IDs:", e);
         }
 
-        if (deviceIds.length === 0) {
-          // No orders placed on this device yet - do not fetch any stranger's orders!
-          setOrders([]);
-          return;
+        // 2. Check saved customer phone number from checkout
+        let savedPhone = "";
+        try {
+          savedPhone = localStorage.getItem("playo_customer_phone") || "";
+          if (!savedPhone && typeof document !== "undefined") {
+            const match = document.cookie.match(/playo_customer_phone=([^;]+)/);
+            if (match && match[1]) savedPhone = match[1].trim();
+          }
+        } catch {}
+
+        if (deviceIds.length > 0) {
+          const res = await fetch(`/api/orders?ids=${encodeURIComponent(deviceIds.join(","))}`, { cache: "no-store" });
+          const data = await res.json();
+          if (data.success && Array.isArray(data.orders) && data.orders.length > 0) {
+            const mapped: OrderDetail[] = data.orders.map(mapRawOrder);
+            setOrders(mapped);
+            return;
+          }
         }
 
-        const res = await fetch(`/api/orders?ids=${encodeURIComponent(deviceIds.join(","))}`, { cache: "no-store" });
-        const data = await res.json();
-        if (data.success && Array.isArray(data.orders)) {
-          const mapped: OrderDetail[] = data.orders.map(mapRawOrder);
-          setOrders(mapped);
-        } else {
-          setOrders([]);
+        // Fallback: auto-lookup by customer phone (recovers orders placed during private browsing or browser refresh)
+        if (savedPhone) {
+          const cleanPhone = savedPhone.replace(/\D/g, "").slice(-10);
+          if (cleanPhone.length === 10) {
+            const res = await fetch(`/api/orders?phone=${encodeURIComponent(cleanPhone)}`, { cache: "no-store" });
+            const data = await res.json();
+            if (data.success && Array.isArray(data.orders) && data.orders.length > 0) {
+              const mapped: OrderDetail[] = data.orders.map(mapRawOrder);
+              setOrders(mapped);
+              try {
+                const list: string[] = [];
+                mapped.forEach((m: OrderDetail) => {
+                  if (!list.includes(m.id)) list.push(m.id);
+                });
+                localStorage.setItem("playo_placed_order_ids", JSON.stringify(list));
+              } catch {}
+              return;
+            }
+          }
         }
+
+        setOrders([]);
       } catch (err) {
         console.error("Error fetching orders:", err);
       } finally {
@@ -233,7 +268,7 @@ function MyOrdersContent() {
       const q = trackInput.trim();
       const isPhone = /^\d{10}$/.test(q.replace(/\D/g, ""));
       const endpoint = isPhone
-        ? `/api/orders?phone=${encodeURIComponent(q.replace(/\D/g, ""))}`
+        ? `/api/orders?phone=${encodeURIComponent(q.replace(/\D/g, "").slice(-10))}`
         : `/api/orders?id=${encodeURIComponent(q)}`;
 
       const res = await fetch(endpoint, { cache: "no-store" });
@@ -245,7 +280,7 @@ function MyOrdersContent() {
           setSelectedOrderId(mapped[0].id);
         }
 
-        // Save found order IDs into this device's storage
+        // Save found order IDs and phone into this device's storage
         try {
           const stored = localStorage.getItem("playo_placed_order_ids");
           const list: string[] = stored ? JSON.parse(stored) : [];
@@ -253,9 +288,14 @@ function MyOrdersContent() {
             if (!list.includes(m.id)) list.unshift(m.id);
           });
           localStorage.setItem("playo_placed_order_ids", JSON.stringify(list));
+          if (mapped[0].phone) {
+            const clean10 = mapped[0].phone.replace(/\D/g, "").slice(-10);
+            localStorage.setItem("playo_customer_phone", clean10);
+            document.cookie = `playo_customer_phone=${clean10}; path=/; max-age=7776000; SameSite=Lax;`;
+          }
         } catch {}
       } else {
-        setTrackError(`No order found matching "${q}". Please verify the Order ID or 10-digit mobile number.`);
+        setTrackError(`No order found matching "${q}". If you recently paid via Razorpay, please enter your 10-digit mobile number or Payment ID (e.g. pay_...).`);
       }
     } catch (err: any) {
       setTrackError(err.message || "Failed to search order");
@@ -311,25 +351,29 @@ function MyOrdersContent() {
                 <span>My Orders</span>
               </h1>
               <p className="text-xs sm:text-sm text-gray-500 mt-1">
-                Live orders from showroom database with tracking: Pending, Confirmed, Delivered, or Cancelled.
+                Track live orders from Playo Edappal showroom database: Pending, Confirmed, Delivered, or Cancelled.
               </p>
             </div>
 
             {/* Live Order Tracking Lookup Form */}
-            <div className="bg-white rounded-2xl border border-gray-200/90 p-4 shadow-2xs">
+            <div className="bg-white rounded-2xl border border-gray-200/90 p-4 sm:p-5 shadow-2xs">
+              <div className="flex items-center gap-2 mb-2 text-xs font-bold text-gray-700">
+                <Search className="w-4 h-4 text-[#FF9800]" />
+                <span>Find Order by Mobile Number, Order ID, or Razorpay Payment ID</span>
+              </div>
               <form onSubmit={handleTrackSubmit} className="flex flex-col sm:flex-row gap-2.5">
                 <input
                   type="text"
                   value={trackInput}
                   onChange={(e) => setTrackInput(e.target.value)}
-                  placeholder="Enter Order ID (e.g. PLY-123456) or 10-digit Mobile Number"
+                  placeholder="Enter 10-digit Mobile Number, Order ID (PLY-...), or Payment ID (pay_...)"
                   className="flex-1 px-4 py-2.5 text-xs sm:text-sm rounded-xl border border-gray-300 bg-white placeholder-gray-400 focus:border-[#FF9800] focus:ring-2 focus:ring-orange-100 outline-none transition-all"
                 />
                 <button
                   type="submit"
                   className="px-6 py-2.5 bg-[#0D1B2A] hover:bg-black text-white text-xs font-bold rounded-xl shadow-sm transition-all cursor-pointer whitespace-nowrap"
                 >
-                  Track Order
+                  Track / Retrieve Order
                 </button>
               </form>
               {trackError && (
@@ -342,23 +386,23 @@ function MyOrdersContent() {
             {isLoading ? (
               <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
                 <div className="w-8 h-8 border-4 border-sky-600 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-                <p className="text-xs font-bold text-gray-500">Loading your orders from database...</p>
+                <p className="text-xs font-bold text-gray-500">Retrieving your orders...</p>
               </div>
             ) : orders.length === 0 ? (
-              <div className="bg-white rounded-2xl border border-gray-200/90 p-8 text-center space-y-3">
+              <div className="bg-white rounded-2xl border border-gray-200/90 p-8 sm:p-12 text-center space-y-3">
                 <div className="w-14 h-14 rounded-full bg-gray-100 text-gray-400 mx-auto flex items-center justify-center">
                   <Package className="w-7 h-7" />
                 </div>
-                <h3 className="text-base font-bold text-gray-900">No orders placed yet</h3>
-                <p className="text-xs text-gray-500 max-w-sm mx-auto">
-                  Browse our catalog to order ride-ons, scooters, diecast models, and soft toys.
+                <h3 className="text-base font-bold text-gray-900">No orders placed on this device yet</h3>
+                <p className="text-xs text-gray-500 max-w-md mx-auto leading-relaxed">
+                  Paid online via UPI or Card? Enter your <strong>10-digit mobile number</strong> or <strong>Razorpay Payment ID (pay_...)</strong> in the search box above to instantly locate your order!
                 </p>
-                <div className="pt-2 flex justify-center">
+                <div className="pt-2 flex justify-center gap-3">
                   <Link
                     href="/catalog"
-                    className="px-4 py-2 bg-[#0D1B2A] hover:bg-black text-white text-xs font-semibold rounded-xl transition-all"
+                    className="px-5 py-2.5 bg-[#0D1B2A] hover:bg-black text-white text-xs font-bold rounded-xl transition-all shadow-sm"
                   >
-                    Browse Catalog
+                    Browse Toy Catalog
                   </Link>
                 </div>
               </div>
@@ -401,6 +445,7 @@ function MyOrdersContent() {
                               alt={it.name}
                               fill
                               className="object-contain p-1"
+                              unoptimized
                             />
                           </div>
                           <div className="flex-1 min-w-0">
@@ -608,7 +653,7 @@ function MyOrdersContent() {
                       <span className="text-gray-500 font-mono">{currentOrder.trackingNumber}</span>
                     </div>
                     <p className="text-[11px] text-gray-500 flex items-center gap-1 mt-0.5">
-                      <MapPin className="w-3 h-3 text-gray-400 shrink-0" />
+                      <MapPin className="w-3.5 h-3.5 text-gray-400 shrink-0" />
                       <span>{currentOrder.carrierLocation}</span>
                     </p>
                   </div>
@@ -647,6 +692,7 @@ function MyOrdersContent() {
                           alt={item.name}
                           fill
                           className="object-contain p-1"
+                          unoptimized
                         />
                       </div>
                       <div className="flex-1 min-w-0">

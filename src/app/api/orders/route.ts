@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDatabase } from "@/lib/mongodb";
 import { escapeRegex, sanitizeInput, validateAdminAuth } from "@/lib/security";
-import { sendEmail, generateOrderEmailHtml } from "@/lib/email";
+import { syncRazorpayOrders, createOrGetOrder } from "@/lib/order-service";
 
 export const dynamic = "force-dynamic";
 
@@ -13,8 +13,20 @@ export async function GET(req: NextRequest) {
     const id = searchParams.get("id");
     const ids = searchParams.get("ids");
     const phone = searchParams.get("phone");
+    const sync = searchParams.get("sync");
 
     const isAdmin = validateAdminAuth(req);
+    const db = await getDatabase();
+
+    // Admin-triggered or explicit live Razorpay auto-sync
+    if (isAdmin && sync === "true") {
+      try {
+        await syncRazorpayOrders({ limit: 50 });
+      } catch (e) {
+        console.warn("Admin sync error:", e);
+      }
+    }
+
     const query: any = {};
 
     if (isAdmin) {
@@ -22,14 +34,33 @@ export async function GET(req: NextRequest) {
         query.status = status;
       }
       if (id && id.trim()) {
-        query.id = id.trim();
+        const cleanId = id.trim();
+        query.$or = [
+          { id: cleanId },
+          { razorpayPaymentId: cleanId },
+          { razorpayOrderId: cleanId },
+          { trackingNumber: cleanId },
+        ];
       } else if (phone && phone.trim()) {
-        query.phone = phone.trim().replace(/\D/g, "");
+        const raw = phone.trim().replace(/\D/g, "");
+        const last10 = raw.slice(-10);
+        if (last10.length === 10) {
+          query.$or = [
+            { phone: last10 },
+            { phone: `+91${last10}` },
+            { phone: `91${last10}` },
+            { phone: new RegExp(`${last10}$`) },
+          ];
+        } else {
+          query.phone = raw;
+        }
       } else if (search && search.trim()) {
         const safeSearch = escapeRegex(search.trim());
         const regex = new RegExp(safeSearch, "i");
         query.$or = [
           { id: regex },
+          { razorpayPaymentId: regex },
+          { razorpayOrderId: regex },
           { customerName: regex },
           { phone: regex },
           { deliveryAddress: regex },
@@ -41,28 +72,72 @@ export async function GET(req: NextRequest) {
       if (ids && ids.trim()) {
         const idList = ids.split(",").map((s) => s.trim()).filter(Boolean);
         if (idList.length > 0) {
-          query.id = { $in: idList };
+          query.$or = [
+            { id: { $in: idList } },
+            { razorpayPaymentId: { $in: idList } },
+            { razorpayOrderId: { $in: idList } },
+          ];
         } else {
           return NextResponse.json({ success: true, count: 0, orders: [] });
         }
       } else if (id && id.trim()) {
-        query.id = id.trim();
+        const cleanId = id.trim();
+        query.$or = [
+          { id: cleanId },
+          { razorpayPaymentId: cleanId },
+          { razorpayOrderId: cleanId },
+          { trackingNumber: cleanId },
+        ];
+
+        // Check if exists in DB; if not and looks like a Razorpay Payment ID, auto-sync live
+        const preCheck = await db.collection("orders").findOne(query);
+        if (!preCheck && (cleanId.startsWith("pay_") || cleanId.startsWith("order_"))) {
+          try {
+            await syncRazorpayOrders({ paymentId: cleanId });
+          } catch {}
+        }
       } else if (phone && phone.trim()) {
-        const cleanPhone = phone.trim().replace(/\D/g, "");
-        if (cleanPhone.length >= 10) {
-          query.phone = cleanPhone;
+        const raw = phone.trim().replace(/\D/g, "");
+        const last10 = raw.slice(-10);
+        if (last10.length === 10) {
+          query.$or = [
+            { phone: last10 },
+            { phone: `+91${last10}` },
+            { phone: `91${last10}` },
+            { phone: new RegExp(`${last10}$`) },
+          ];
+
+          // Check if exists in DB; if not, check live Razorpay to auto-recover customer order
+          const preCheck = await db.collection("orders").findOne(query);
+          if (!preCheck) {
+            try {
+              await syncRazorpayOrders({ phone: last10, limit: 30 });
+            } catch {}
+          }
         } else {
           return NextResponse.json({ success: true, count: 0, orders: [] });
         }
       } else {
-        // Fallback: check device cookie if present
+        // Fallback: check device cookies
         const placedCookie = req.cookies.get("playo_placed_order_ids")?.value;
+        const phoneCookie = req.cookies.get("playo_customer_phone")?.value;
+
         if (placedCookie) {
           const orderIds = placedCookie.split(",").map((s) => s.trim()).filter(Boolean);
           if (orderIds.length > 0) {
-            query.id = { $in: orderIds };
-          } else {
-            return NextResponse.json({ success: true, count: 0, orders: [] });
+            query.$or = [
+              { id: { $in: orderIds } },
+              { razorpayPaymentId: { $in: orderIds } },
+            ];
+          }
+        } else if (phoneCookie) {
+          const last10 = phoneCookie.replace(/\D/g, "").slice(-10);
+          if (last10.length === 10) {
+            query.$or = [
+              { phone: last10 },
+              { phone: `+91${last10}` },
+              { phone: new RegExp(`${last10}$`) },
+            ];
           }
         } else {
           // Never dump all orders to anonymous requests
@@ -71,7 +146,6 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    const db = await getDatabase();
     const orders = await db
       .collection("orders")
       .find(query)
@@ -84,7 +158,48 @@ export async function GET(req: NextRequest) {
       id: o.id || o._id.toString(),
     }));
 
-    return NextResponse.json({ success: true, count: formatted.length, orders: formatted });
+    // Deduplication Engine: Never show the same order twice in Admin or My Orders
+    const seen = new Set<string>();
+    const deduplicated: any[] = [];
+    const duplicateIdsToDelete: string[] = [];
+
+    for (const ord of formatted) {
+      const dedupKey = ord.razorpayPaymentId
+        ? `pay_${ord.razorpayPaymentId}`
+        : ord.razorpayOrderId
+        ? `order_${ord.razorpayOrderId}`
+        : `id_${ord.id}`;
+
+      if (!seen.has(dedupKey)) {
+        seen.add(dedupKey);
+        deduplicated.push(ord);
+      } else if (isAdmin && ord._id) {
+        duplicateIdsToDelete.push(ord._id);
+      }
+    }
+
+    // Auto-clean redundant duplicate documents in the background
+    if (isAdmin && duplicateIdsToDelete.length > 0) {
+      (async () => {
+        try {
+          const { ObjectId } = await import("mongodb");
+          const objIds = duplicateIdsToDelete
+            .filter((i) => ObjectId.isValid(i))
+            .map((i) => new ObjectId(i));
+          if (objIds.length > 0) {
+            await db.collection("orders").deleteMany({ _id: { $in: objIds } });
+          }
+        } catch (cleanErr) {
+          console.warn("Duplicate cleanup notice:", cleanErr);
+        }
+      })();
+    }
+
+    return NextResponse.json({
+      success: true,
+      count: deduplicated.length,
+      orders: deduplicated,
+    });
   } catch (error: any) {
     console.error("Error fetching orders:", error);
     return NextResponse.json(
@@ -106,9 +221,12 @@ export async function POST(req: NextRequest) {
       deliveryInstructions,
       paymentMethod = "Razorpay (UPI / NetBanking)",
       items,
+      razorpayPaymentId,
+      razorpayOrderId,
+      razorpaySignature,
     } = body;
 
-    // 1. Strict Sanitization & Backend Validation
+    // Strict Sanitization
     const cleanName = sanitizeInput(customerName, 100);
     const cleanPhone = sanitizeInput(phone, 20).replace(/\D/g, "");
     const cleanEmail = sanitizeInput(email, 120);
@@ -143,227 +261,45 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const db = await getDatabase();
-
-    // 2. Validate products strictly against MongoDB (Anti-Tampering)
-    // Any price or discount submitted by client is DISCARDED. Prices are retrieved solely from DB!
-    const validatedItems: any[] = [];
-    let subtotal = 0;
-    let totalDeliveryFee = 0;
-
-    for (const item of items) {
-      const qty = Math.floor(Number(item.quantity || item.qty || 1));
-      if (isNaN(qty) || qty < 1) {
-        return NextResponse.json(
-          { success: false, error: `Invalid quantity (${qty}) for item` },
-          { status: 400 }
-        );
-      }
-
-      // Check product in DB by ID or exact Name
-      const prod = await db.collection("products").findOne({
-        $or: [{ id: item.id }, { name: item.name }],
-      });
-
-      if (!prod) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: `Product "${item.name || item.id}" not found in showroom inventory.`,
-          },
-          { status: 400 }
-        );
-      }
-
-      const availableStock = typeof prod.stockCount === "number" ? prod.stockCount : 0;
-      if (availableStock < qty) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: `Insufficient stock for "${prod.name}". Requested: ${qty}, Available: ${availableStock}`,
-          },
-          { status: 400 }
-        );
-      }
-
-      // Authoritative Price & Delivery Fee from DB
-      const verifiedPrice = Number(prod.price) || 0;
-      const verifiedDeliveryFee = typeof prod.deliveryFee === "number" ? Math.max(0, prod.deliveryFee) : 0;
-      validatedItems.push({
-        id: prod.id,
-        name: prod.name,
-        category: prod.category || prod.categorySlug,
-        imageUrl: prod.imageUrl || prod.images?.[0] || "/images/catalog/porsche-drift-rc.jpg",
-        price: verifiedPrice,
-        deliveryFee: verifiedDeliveryFee,
-        quantity: qty,
-        specs: item.specs || (prod.scale ? `Scale: ${prod.scale}` : "Standard"),
-      });
-      subtotal += verifiedPrice * qty;
-      totalDeliveryFee += verifiedDeliveryFee * qty;
-    }
-
-    // 3. Calculate Offer Discount strictly from MongoDB active rules
-    let discount = 0;
-    try {
-      const activeOffers = await db
-        .collection("offers")
-        .find({ status: "Active", minAmount: { $lte: subtotal } })
-        .sort({ discountPercentage: -1 })
-        .toArray();
-
-      if (activeOffers.length > 0) {
-        const bestOffer = activeOffers[0];
-        const pct = Math.min(100, Math.max(0, Number(bestOffer.discountPercentage) || 0));
-        discount = Math.round((subtotal * pct) / 100);
-      }
-    } catch (e) {
-      console.warn("Could not calculate offer discount:", e);
-    }
-
-    const total = Math.max(0, subtotal - discount + totalDeliveryFee);
-    const orderId = `PLY-${Date.now().toString().slice(-6)}`;
-
-    // 4. Concurrency-Safe Atomic Stock Reservation
-    const decrementedProducts: { id: string; quantity: number }[] = [];
-    for (const it of validatedItems) {
-      const reserveResult = await db.collection("products").updateOne(
-        { id: it.id, stockCount: { $gte: it.quantity } },
-        {
-          $inc: { stockCount: -it.quantity, soldCount: it.quantity },
-          $set: { updatedAt: new Date() },
-        }
-      );
-
-      if (reserveResult.modifiedCount === 0) {
-        // Rollback any earlier products decremented in this transaction
-        for (const rolled of decrementedProducts) {
-          await db.collection("products").updateOne(
-            { id: rolled.id },
-            { $inc: { stockCount: rolled.quantity, soldCount: -rolled.quantity } }
-          );
-        }
-        return NextResponse.json(
-          {
-            success: false,
-            error: `Could not reserve stock for "${it.name}". Only limited units were available and were just taken by another buyer.`,
-          },
-          { status: 409 }
-        );
-      }
-
-      decrementedProducts.push({ id: it.id, quantity: it.quantity });
-    }
-
-    // 5. Update inStock flag and create stock alerts
-    for (const it of validatedItems) {
-      const updatedProd = await db.collection("products").findOne({ id: it.id });
-      if (updatedProd) {
-        const newStock = typeof updatedProd.stockCount === "number" ? updatedProd.stockCount : 0;
-        await db.collection("products").updateOne(
-          { id: it.id },
-          { $set: { inStock: newStock > 0 } }
-        );
-
-        if (newStock <= 0) {
-          await db.collection("notifications").insertOne({
-            id: `notif-oos-${it.id}-${Date.now()}`,
-            type: "stock",
-            title: "Out of Stock Alert",
-            desc: `"${updatedProd.name}" is currently out of stock (0 units remaining).`,
-            time: "Just now",
-            read: false,
-            createdAt: new Date(),
-          });
-        } else if (newStock < 3) {
-          await db.collection("notifications").insertOne({
-            id: `notif-low-${it.id}-${Date.now()}`,
-            type: "stock",
-            title: "Low Stock Alert",
-            desc: `"${updatedProd.name}" has only ${newStock} unit(s) remaining in showroom inventory.`,
-            time: "Just now",
-            read: false,
-            createdAt: new Date(),
-          });
-        }
-      }
-    }
-
-    // 6. Assemble and insert complete Order document
-    const newOrder = {
-      id: orderId,
-      orderNumber: orderId,
-      orderDate: new Date().toLocaleDateString("en-IN", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      }),
-      createdAt: new Date(),
+    // Atomic order creation via order service
+    const { order, isNew } = await createOrGetOrder({
+      razorpayPaymentId: razorpayPaymentId || `offline_${Date.now()}`,
+      razorpayOrderId,
+      razorpaySignature,
       customerName: cleanName,
       phone: cleanPhone,
       email: cleanEmail,
       deliveryAddress: cleanAddress,
-      shippingOption:
-        shippingOption === "speed_and_safe"
-          ? "Speed & Safe Courier Service"
-          : "Indian Post (Door-to-Door Delivery)",
+      shippingOption,
       deliveryInstructions: cleanInstructions,
-      status: "Pending",
-      estimatedDelivery: "2-3 Business Days",
-      courier:
-        shippingOption === "speed_and_safe"
-          ? "Speed & Safe Courier Service"
-          : "India Post Doorstep Express",
-      trackingNumber: `IP${Date.now().toString().slice(-8)}IN`,
-      carrierLocation: "Order received - awaiting showroom packing",
-      paymentMethod,
-      paymentStatus: "Paid",
-      items: validatedItems,
-      subtotal,
-      discount,
-      deliveryFee: totalDeliveryFee,
-      total,
-    };
-
-    const orderResult = await db.collection("orders").insertOne(newOrder);
-
-    // 7. Add notification for new order received
-    try {
-      const adminEmail = process.env.ADMIN_EMAIL || "playoedappal99@gmail.com";
-      const emailHtml = generateOrderEmailHtml(newOrder);
-      sendEmail({
-        to: adminEmail,
-        subject: `🛒 New Order #${orderId} Received - ₹${total.toLocaleString("en-IN")} from ${cleanName}`,
-        html: emailHtml,
-        text: `Playo Edappal: New Order #${orderId} received from ${cleanName} (+91 ${cleanPhone}). Total: ₹${total}. Delivery to: ${cleanAddress}`,
-      }).catch((err) => {
-        console.warn("Order email notification background error:", err);
-      });
-    } catch (e) {
-      console.warn("Could not dispatch order notification email:", e);
-    }
-    await db.collection("notifications").insertOne({
-      id: `notif-order-${orderId}`,
-      type: "order",
-      title: "New Order Received",
-      desc: `Order #${orderId} received from ${cleanName} for ₹${total.toLocaleString("en-IN")}.`,
-      time: "Just now",
-      read: false,
-      createdAt: new Date(),
+      items,
+      source: "client",
     });
 
     const response = NextResponse.json(
       {
         success: true,
-        order: { ...newOrder, _id: orderResult.insertedId.toString() },
+        order,
+        message: isNew ? "Order placed successfully." : "Order already confirmed.",
       },
-      { status: 201 }
+      { status: isNew ? 201 : 200 }
     );
 
+    // Set tracking cookies
     const existingCookie = req.cookies.get("playo_placed_order_ids")?.value;
-    const newCookieVal = existingCookie ? `${existingCookie},${orderId}` : orderId;
-    response.cookies.set("playo_placed_order_ids", newCookieVal, {
-      maxAge: 60 * 60 * 24 * 90, // 90 days
+    const cookieOrders = existingCookie ? existingCookie.split(",").map((s) => s.trim()) : [];
+    if (!cookieOrders.includes(order.id)) {
+      cookieOrders.unshift(order.id);
+    }
+
+    response.cookies.set("playo_placed_order_ids", cookieOrders.join(","), {
+      maxAge: 60 * 60 * 24 * 90,
+      path: "/",
+      sameSite: "lax",
+    });
+
+    response.cookies.set("playo_customer_phone", cleanPhone.slice(-10), {
+      maxAge: 60 * 60 * 24 * 90,
       path: "/",
       sameSite: "lax",
     });
@@ -372,7 +308,7 @@ export async function POST(req: NextRequest) {
   } catch (error: any) {
     console.error("Error creating order:", error);
     return NextResponse.json(
-      { success: false, error: error.message },
+      { success: false, error: error.message || "Failed to process order" },
       { status: 500 }
     );
   }
