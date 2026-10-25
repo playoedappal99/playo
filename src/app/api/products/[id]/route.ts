@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDatabase } from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 import { clearProductsCache } from "@/lib/cache";
+import { revalidatePath } from "next/cache";
 import { validateAdminAuth } from "@/lib/security";
 
 export const dynamic = "force-dynamic";
@@ -283,6 +284,15 @@ export async function PUT(
       success: true,
       message: "Product updated successfully",
     });
+    try {
+      revalidatePath("/");
+      revalidatePath("/catalog");
+      revalidatePath(`/product/${id}`);
+    } catch {}
+    return NextResponse.json({
+      success: true,
+      message: "Product updated successfully",
+    });
   } catch (error: any) {
     console.error("Error updating product:", error);
     return NextResponse.json(
@@ -348,6 +358,15 @@ export async function PATCH(
     return NextResponse.json({
       success: true,
       message: "Product updated successfully",
+    });
+    try {
+      revalidatePath("/");
+      revalidatePath("/catalog");
+      revalidatePath(`/product/${id}`);
+    } catch {}
+    return NextResponse.json({
+      success: true,
+      message: "Product updated successfully",
       isBestToy: body.isBestToy,
     });
   } catch (error: any) {
@@ -404,7 +423,16 @@ export async function DELETE(
 
     return NextResponse.json({
       success: true,
-      message: "Product deleted successfully from MongoDB",
+      message: "Product deleted successfully",
+    });
+    try {
+      revalidatePath("/");
+      revalidatePath("/catalog");
+      revalidatePath(`/product/${id}`);
+    } catch {}
+    return NextResponse.json({
+      success: true,
+      message: "Product deleted successfully",
     });
   } catch (error: any) {
     console.error("Error deleting product:", error);

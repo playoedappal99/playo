@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDatabase } from "@/lib/mongodb";
+import { sendEmail, generateOrderEmailHtml } from "@/lib/email";
 import crypto from "crypto";
 
 export const dynamic = "force-dynamic";
@@ -146,6 +147,22 @@ export async function POST(req: NextRequest) {
         read: false,
         createdAt: new Date(),
       });
+
+      // Dispatch Email Notification to Store Admin
+      try {
+        const adminEmail = process.env.ADMIN_EMAIL || "playoedappal99@gmail.com";
+        const emailHtml = generateOrderEmailHtml(recoveredOrder);
+        sendEmail({
+          to: adminEmail,
+          subject: `🛒 New Order #${newOrderId} Received via Webhook - ₹${totalRupees.toLocaleString("en-IN")} from ${cleanName}`,
+          html: emailHtml,
+          text: `Playo Edappal: New Order #${newOrderId} auto-recovered via Webhook for ₹${totalRupees} from ${cleanName}.`,
+        }).catch((err) => {
+          console.warn("Webhook order email send failed:", err);
+        });
+      } catch (emailErr) {
+        console.warn("Could not send webhook order email:", emailErr);
+      }
 
       console.log(`Successfully auto-recovered and created order #${newOrderId} via Webhook.`);
       return NextResponse.json({

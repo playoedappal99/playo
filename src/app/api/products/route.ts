@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDatabase } from "@/lib/mongodb";
 import { escapeRegex, validateAdminAuth } from "@/lib/security";
 import { getCachedProducts, setCachedProducts, clearProductsCache } from "@/lib/cache";
+import { revalidatePath } from "next/cache";
 
 export const dynamic = "force-dynamic";
 
@@ -361,6 +362,11 @@ export async function POST(req: NextRequest) {
 
     // Invalidate cache immediately on new insert
     clearProductsCache();
+    try {
+      revalidatePath("/");
+      revalidatePath("/catalog");
+      revalidatePath(`/product/${productId}`);
+    } catch {}
 
     return NextResponse.json(
       {

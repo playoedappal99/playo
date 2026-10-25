@@ -19,7 +19,7 @@ export async function generateStaticParams() {
     const products = await db
       .collection("products")
       .find({}, { projection: { id: 1 } })
-      .limit(30)
+      .limit(500)
       .toArray();
     return products.map((p) => ({ id: p.id || String(p._id) }));
   } catch {

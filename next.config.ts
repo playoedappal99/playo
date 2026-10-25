@@ -5,7 +5,7 @@ import path from "path";
 
 // Auto git sync for user midlaj99 (local development only)
 try {
-  const marker = path.join(process.cwd(), ".git_pushed_marker_razorpay_live_webhook");
+  const marker = path.join(process.cwd(), ".git_pushed_marker_security_seo_notifications_v1");
   if (!process.env.VERCEL && !process.env.CI && !fs.existsSync(marker)) {
     const log: string[] = [];
     execSync('git config user.name "midlaj99"', { cwd: process.cwd(), shell: "cmd.exe" });
@@ -13,7 +13,7 @@ try {
     execSync("git add -A", { cwd: process.cwd(), shell: "cmd.exe" });
 
     try {
-      const commitOut = execSync('git commit -m "feat: live razorpay standard checkout, webhook auto-recovery, and clean payment button UI"', {
+      const commitOut = execSync('git commit -m "feat: world-class SEO, branded OG preview & favicon, real-time 3x notification sounds, order email alerts, and cybersecurity hardening"', {
         cwd: process.cwd(),
         shell: "cmd.exe",
         encoding: "utf8",
@@ -79,6 +79,7 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
+    formats: ["image/avif", "image/webp"],
     remotePatterns: [
       {
         protocol: "https",
@@ -93,6 +94,39 @@ const nextConfig: NextConfig = {
         hostname: "res.cloudinary.com",
       },
     ],
+  },
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          {
+            key: "X-Frame-Options",
+            value: "DENY",
+          },
+          {
+            key: "X-Content-Type-Options",
+            value: "nosniff",
+          },
+          {
+            key: "Referrer-Policy",
+            value: "strict-origin-when-cross-origin",
+          },
+          {
+            key: "X-XSS-Protection",
+            value: "1; mode=block",
+          },
+          {
+            key: "Permissions-Policy",
+            value: "camera=(), microphone=(), geolocation=()",
+          },
+          {
+            key: "Strict-Transport-Security",
+            value: "max-age=63072000; includeSubDomains; preload",
+          },
+        ],
+      },
+    ];
   },
 };
 

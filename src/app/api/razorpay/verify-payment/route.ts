@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDatabase } from "@/lib/mongodb";
 import { sanitizeInput } from "@/lib/security";
+import { sendEmail, generateOrderEmailHtml } from "@/lib/email";
 import crypto from "crypto";
 
 export const dynamic = "force-dynamic";
@@ -295,6 +296,22 @@ export async function POST(req: NextRequest) {
       read: false,
       createdAt: new Date(),
     });
+
+    // 9. Instant Dispatch Email to Showroom Admin
+    try {
+      const adminEmail = process.env.ADMIN_EMAIL || "playoedappal99@gmail.com";
+      const emailHtml = generateOrderEmailHtml(newOrder);
+      sendEmail({
+        to: adminEmail,
+        subject: `🛒 New Order #${orderId} Received - ₹${total.toLocaleString("en-IN")} from ${cleanName}`,
+        html: emailHtml,
+        text: `Playo Edappal: New Order #${orderId} received from ${cleanName} (+91 ${cleanPhone}). Total: ₹${total}. Delivery to: ${cleanAddress}`,
+      }).catch((err) => {
+        console.warn("Background order email alert failed to send:", err);
+      });
+    } catch (emailErr) {
+      console.warn("Failed to generate order email:", emailErr);
+    }
 
     const response = NextResponse.json(
       {

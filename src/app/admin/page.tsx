@@ -232,6 +232,84 @@ function AdminContent() {
 
   const [formProduct, setFormProduct] = useState<FormProductState>(DEFAULT_FORM_PRODUCT);
 
+  // Audio & Notification Bar alert engine
+  const initialLoadDoneRef = useRef(false);
+  const knownOrderIdsRef = useRef<Set<string>>(new Set());
+  const knownLowStockIdsRef = useRef<Set<string>>(new Set());
+
+  // Audio playback helper: plays audio file 3 times continuously
+  const playNotificationAudio = useCallback((audioSrc: string, times: number = 3) => {
+    if (!soundAlert) return;
+    try {
+      let count = 0;
+      const playNext = () => {
+        if (count >= times) return;
+        count++;
+        const audio = new Audio(audioSrc);
+        audio.volume = 1.0;
+        audio.onended = () => {
+          if (count < times) {
+            playNext();
+          }
+        };
+        audio.play().catch((err) => {
+          console.warn("Audio playback notice:", err);
+        });
+      };
+      playNext();
+    } catch (e) {
+      console.warn("Audio error:", e);
+    }
+  }, [soundAlert]);
+
+  // Device Notification Bar helper
+  const showDeviceNotification = useCallback((title: string, body: string, tag: string) => {
+    if (!deviceAlerts) return;
+    if (typeof window !== "undefined" && "Notification" in window) {
+      if (Notification.permission === "granted") {
+        try {
+          const notif = new Notification(title, {
+            body,
+            icon: "/images/playo-logo.png",
+            badge: "/images/playo-logo.png",
+            tag,
+            requireInteraction: true,
+          });
+          notif.onclick = () => {
+            window.focus();
+            if (tag.startsWith("order")) {
+              setActiveTab("Orders");
+            } else if (tag.startsWith("stock")) {
+              setActiveTab("Inventory");
+            }
+          };
+        } catch (err) {
+          console.warn("Notification bar error:", err);
+        }
+      } else if (Notification.permission !== "denied") {
+        Notification.requestPermission();
+      }
+    }
+  }, [deviceAlerts]);
+
+  // Request browser Notification permission on mount & unlock audio on first interaction
+  useEffect(() => {
+    if (typeof window !== "undefined" && "Notification" in window) {
+      if (Notification.permission === "default") {
+        Notification.requestPermission().catch(() => {});
+      }
+    }
+    const unlockAudio = () => {
+      try {
+        const dummy = new Audio();
+        dummy.play().catch(() => {});
+      } catch {}
+      window.removeEventListener("click", unlockAudio);
+    };
+    window.addEventListener("click", unlockAudio, { once: true });
+    return () => window.removeEventListener("click", unlockAudio);
+  }, []);
+
   // 1. Fetch Products from MongoDB
   const fetchProducts = useCallback(async () => {
     try {
@@ -350,6 +428,85 @@ function AdminContent() {
     if (activeTab === "Best selling") fetchBestsellers();
     if (activeTab === "Offer") fetchOffers();
   }, [isAuthenticated, activeTab, fetchProducts, fetchOrders, fetchCategories, fetchNotifications, fetchBestsellers, fetchOffers]);
+
+  // Real-time notification & sound monitor (Heartbeat polling every 8s)
+  const checkRealtimeAlerts = useCallback(async () => {
+    if (!isAuthenticated) return;
+    try {
+      // 1. Silent Check Orders
+      const ordersRes = await fetch("/api/orders", { cache: "no-store" });
+      const ordersData = await ordersRes.json();
+      if (ordersData.success && Array.isArray(ordersData.orders)) {
+        const currentOrders: AdminOrder[] = ordersData.orders;
+        setOrders(currentOrders);
+
+        if (!initialLoadDoneRef.current) {
+          currentOrders.forEach((o) => knownOrderIdsRef.current.add(o.id));
+        } else {
+          const newOrders = currentOrders.filter((o) => !knownOrderIdsRef.current.has(o.id));
+          if (newOrders.length > 0) {
+            newOrders.forEach((o) => knownOrderIdsRef.current.add(o.id));
+            const latest = newOrders[0];
+            // Play order sound 3 times continuously
+            playNotificationAudio("/notification/order.mp3", 3);
+            // Dispatch native device notification bar alert
+            showDeviceNotification(
+              "🛒 New Order Received!",
+              `Order #${latest.id} from ${latest.customerName} - ₹${(latest.total || 0).toLocaleString("en-IN")}`,
+              `order-${latest.id}`
+            );
+          }
+        }
+      }
+
+      // 2. Silent Check Products for Low Stock (< 3)
+      const prodRes = await fetch(`/api/products?nocache=true&t=${Date.now()}`, {
+        cache: "no-store",
+        headers: adminHeaders({ "Cache-Control": "no-cache, no-store, must-revalidate" }),
+      });
+      const prodData = await prodRes.json();
+      if (prodData.success && Array.isArray(prodData.products)) {
+        const currentProds: AdminProduct[] = prodData.products;
+        setProducts(currentProds);
+
+        const currentLowStock = currentProds.filter((p) => p.stockCount > 0 && p.stockCount < 3);
+
+        if (!initialLoadDoneRef.current) {
+          currentLowStock.forEach((p) => knownLowStockIdsRef.current.add(p.id));
+        } else {
+          const newLowStock = currentLowStock.filter((p) => !knownLowStockIdsRef.current.has(p.id));
+          if (newLowStock.length > 0) {
+            newLowStock.forEach((p) => knownLowStockIdsRef.current.add(p.id));
+            const prod = newLowStock[0];
+            // Play low stock sound 3 times continuously
+            playNotificationAudio("/notification/lowstock.mp3", 3);
+            // Dispatch native device notification bar alert
+            showDeviceNotification(
+              "⚠️ Low Showroom Stock Alert!",
+              `Product "${prod.name}" has only ${prod.stockCount} unit(s) remaining!`,
+              `stock-${prod.id}`
+            );
+          }
+        }
+      }
+
+      // 3. Refresh Notifications badge count
+      fetchNotifications();
+
+      initialLoadDoneRef.current = true;
+    } catch (e) {
+      console.warn("Realtime alert check notice:", e);
+    }
+  }, [isAuthenticated, playNotificationAudio, showDeviceNotification, fetchNotifications]);
+
+  // Run real-time heartbeat polling
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const interval = setInterval(() => {
+      checkRealtimeAlerts();
+    }, 8000);
+    return () => clearInterval(interval);
+  }, [isAuthenticated, checkRealtimeAlerts]);
 
   // Handle Category Add & Upload
   const handleOpenAddCategory = () => {
@@ -645,7 +802,7 @@ function AdminContent() {
             return p;
           })
         );
-        alert(data.error || "Failed to update Best Toys status in database.");
+        alert(data.error || "Failed to update Best Toys status.");
       }
     } catch (err: any) {
       // Revert on error
@@ -666,7 +823,7 @@ function AdminContent() {
 
   // Handle Delete Product
   const handleDeleteProduct = async (productId: string, productName: string, mongoId?: string) => {
-    if (confirm(`Are you sure you want to delete "${productName}" from inventory database?`)) {
+    if (confirm(`Are you sure you want to delete "${productName}" from inventory?`)) {
       // Optimistically remove from state immediately
       const prevProducts = [...products];
       setProducts((current) =>
@@ -1050,7 +1207,7 @@ function AdminContent() {
 
               <div className="flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-slate-700 ml-1">
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse inline-block" />
-                <span>Live MongoDB Atlas</span>
+                <span>Live Store Connected</span>
               </div>
 
               <button
@@ -1133,7 +1290,7 @@ function AdminContent() {
       {/* 4. MAIN ADMIN CONTENT AREA */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         {/* ========================================================
-            TAB 1: INVENTORY (DATABASE BACKED)
+            TAB 1: INVENTORY
            ======================================================== */}
         {activeTab === "Inventory" && (
           <div className="space-y-5 animate-in fade-in duration-200">
@@ -1210,16 +1367,16 @@ function AdminContent() {
                       <tr>
                         <td colSpan={7} className="py-12 text-center text-slate-400">
                           <div className="w-6 h-6 border-2 border-sky-600 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
-                          <p className="font-bold text-slate-700">Loading products from database...</p>
+                          <p className="font-bold text-slate-700">Loading products...</p>
                         </td>
                       </tr>
                     ) : filteredProducts.length === 0 ? (
                       <tr>
                         <td colSpan={7} className="py-12 text-center text-slate-400">
                           <Package className="w-8 h-8 mx-auto mb-2 opacity-40 text-[#0284C7]" />
-                          <p className="font-bold text-slate-700">No products found in database</p>
+                          <p className="font-bold text-slate-700">No products found</p>
                           <p className="text-xs text-slate-400 mt-0.5">
-                            Click &quot;+ Add Product&quot; to add your first toy to the database.
+                            Click &quot;+ Add Product&quot; to add your first toy.
                           </p>
                         </td>
                       </tr>
@@ -1444,7 +1601,7 @@ function AdminContent() {
                       <tr>
                         <td colSpan={7} className="py-12 text-center text-slate-400">
                           <div className="w-6 h-6 border-2 border-sky-600 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
-                          <p>Loading inventory from database...</p>
+                          <p>Loading inventory...</p>
                         </td>
                       </tr>
                     ) : filteredBestToys.length === 0 ? (
@@ -1562,7 +1719,7 @@ function AdminContent() {
         )}
 
         {/* ========================================================
-            TAB 2: ORDERS MANAGEMENT (DATABASE BACKED)
+            TAB 2: ORDERS MANAGEMENT
            ======================================================== */}
         {activeTab === "Orders" && (
           <div className="space-y-4 animate-in fade-in duration-200">
@@ -2208,7 +2365,7 @@ function AdminContent() {
       </main>
 
       {/* ========================================================
-          ADD / EDIT PRODUCT MODAL (CLOUDINARY & MONGO BACKED)
+          ADD / EDIT PRODUCT MODAL
          ======================================================== */}
       {(isAddProductOpen || editingProduct) && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
@@ -2240,11 +2397,11 @@ function AdminContent() {
                 {/* 1. Product Images Upload to Cloudinary */}
                 <div>
                   <label className="block text-xs font-bold text-slate-800 mb-1.5 flex items-center justify-between">
-                    <span>Product Images (Upload to Cloudinary)</span>
+                    <span>Product Images</span>
                     {uploadingProductImages && (
                       <span className="text-xs text-sky-600 font-bold flex items-center gap-1">
                         <UploadCloud className="w-3.5 h-3.5 animate-bounce" />
-                        Uploading to Cloudinary...
+                        Uploading image...
                       </span>
                     )}
                   </label>
@@ -2258,7 +2415,7 @@ function AdminContent() {
                       className="w-full text-xs text-slate-600 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border file:border-slate-200 file:text-xs file:font-bold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 file:cursor-pointer cursor-pointer border border-slate-200 rounded-xl p-1.5 bg-slate-50/60"
                     />
                     <p className="text-xs text-slate-500 font-medium">
-                      {formProduct.images.length} image(s) hosted on Cloudinary. First image will be used as the product card thumbnail.
+                      {formProduct.images.length} image(s) uploaded. First image will be used as the product card thumbnail.
                     </p>
 
                     {formProduct.images.length > 0 && (
@@ -2452,7 +2609,7 @@ function AdminContent() {
                 {/* 8. Color Images Mapping */}
                 <div>
                   <label className="block text-xs font-bold text-slate-800 mb-1.5">
-                    Color Images Mapping (Optional Cloudinary uploads)
+                    Color Images Mapping (Optional)
                   </label>
                   {formProduct.colorMappings.length > 0 && (
                     <div className="space-y-3 mb-3">
@@ -2489,7 +2646,7 @@ function AdminContent() {
 
                           <div>
                             <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                              Upload Color Images (Cloudinary)
+                              Upload Color Images
                             </label>
                             <input
                               type="file"
@@ -2583,7 +2740,7 @@ function AdminContent() {
                   className="px-6 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-[#0284C7] hover:bg-[#0369A1] text-white shadow-xs cursor-pointer transition-all disabled:opacity-50"
                 >
                   {isSubmittingProduct
-                    ? "Saving to Database..."
+                    ? "Saving product..."
                     : editingProduct
                     ? "Save Changes"
                     : "Add Product"}
@@ -2595,7 +2752,7 @@ function AdminContent() {
       )}
 
       {/* ========================================================
-          ADD CATEGORY MODAL (CLOUDINARY & MONGO BACKED)
+          ADD CATEGORY MODAL
          ======================================================== */}
       {isAddCategoryOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
@@ -2634,7 +2791,7 @@ function AdminContent() {
 
               <div>
                 <label className="block text-xs font-bold text-slate-800 mb-1.5">
-                  Category Image (Upload to Cloudinary)
+                  Category Image
                 </label>
                 <div className="flex items-center gap-1.5 mb-2">
                   <label className="flex items-center gap-1.5 text-xs text-sky-700 font-bold cursor-pointer select-none bg-sky-50 px-2.5 py-1 rounded-lg border border-sky-200">

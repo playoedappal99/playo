@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDatabase } from "@/lib/mongodb";
 import { escapeRegex, sanitizeInput, validateAdminAuth } from "@/lib/security";
+import { sendEmail, generateOrderEmailHtml } from "@/lib/email";
 
 export const dynamic = "force-dynamic";
 
@@ -327,6 +328,20 @@ export async function POST(req: NextRequest) {
     const orderResult = await db.collection("orders").insertOne(newOrder);
 
     // 7. Add notification for new order received
+    try {
+      const adminEmail = process.env.ADMIN_EMAIL || "playoedappal99@gmail.com";
+      const emailHtml = generateOrderEmailHtml(newOrder);
+      sendEmail({
+        to: adminEmail,
+        subject: `🛒 New Order #${orderId} Received - ₹${total.toLocaleString("en-IN")} from ${cleanName}`,
+        html: emailHtml,
+        text: `Playo Edappal: New Order #${orderId} received from ${cleanName} (+91 ${cleanPhone}). Total: ₹${total}. Delivery to: ${cleanAddress}`,
+      }).catch((err) => {
+        console.warn("Order email notification background error:", err);
+      });
+    } catch (e) {
+      console.warn("Could not dispatch order notification email:", e);
+    }
     await db.collection("notifications").insertOne({
       id: `notif-order-${orderId}`,
       type: "order",
